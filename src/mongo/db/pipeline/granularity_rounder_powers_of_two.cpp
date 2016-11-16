@@ -80,7 +80,7 @@ Value GranularityRounderPowersOfTwo::roundUp(Value value) {
     }
 
     Variables vars;
-    return ExpressionPow::create(Value(2), exp)->evaluate(&vars);
+    return ExpressionPow::create(new ExpressionContext(), Value(2), exp)->evaluate(&vars);
 }
 
 Value GranularityRounderPowersOfTwo::roundDown(Value value) {
@@ -113,7 +113,7 @@ Value GranularityRounderPowersOfTwo::roundDown(Value value) {
     }
 
     Variables vars;
-    return ExpressionPow::create(Value(2), exp)->evaluate(&vars);
+    return ExpressionPow::create(new ExpressionContext(), Value(2), exp)->evaluate(&vars);
 }
 
 string GranularityRounderPowersOfTwo::getName() {

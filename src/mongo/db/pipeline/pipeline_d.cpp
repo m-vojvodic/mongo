@@ -188,7 +188,6 @@ public:
             return pipeline.getStatus();
         }
 
-        pipeline.getValue()->injectExpressionContext(expCtx);
         pipeline.getValue()->optimizePipeline();
 
         AutoGetCollectionForRead autoColl(expCtx->opCtx, expCtx->ns);

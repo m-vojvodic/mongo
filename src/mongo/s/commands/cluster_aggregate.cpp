@@ -117,7 +117,6 @@ Status ClusterAggregate::runAggregate(OperationContext* txn,
         return pipeline.getStatus();
     }
 
-    pipeline.getValue()->injectExpressionContext(mergeCtx);
     pipeline.getValue()->optimizePipeline();
 
     // If the first $match stage is an exact match on the shard key (with a simple collation or

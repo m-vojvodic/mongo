@@ -129,12 +129,6 @@ public:
     void optimizePipeline();
 
     /**
-     * Propagates a reference to the ExpressionContext to all of the pipeline's contained stages and
-     * expressions.
-     */
-    void injectExpressionContext(const boost::intrusive_ptr<ExpressionContext>& expCtx);
-
-    /**
      * Returns any other collections involved in the pipeline in addition to the collection the
      * aggregation is run on.
      */

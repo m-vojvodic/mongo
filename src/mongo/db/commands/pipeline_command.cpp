@@ -259,7 +259,6 @@ boost::intrusive_ptr<Pipeline> reparsePipeline(
         fassertFailedWithStatusNoTrace(40175, reparsedPipeline.getStatus());
     }
 
-    reparsedPipeline.getValue()->injectExpressionContext(expCtx);
     reparsedPipeline.getValue()->optimizePipeline();
     return reparsedPipeline.getValue();
 }
@@ -464,14 +463,6 @@ public:
                 return appendCommandStatus(result, pipelineCollationStatus);
             }
 
-            // Propagate the ExpressionContext throughout all of the pipeline's stages and
-            // expressions.
-            pipeline->injectExpressionContext(expCtx);
-
-            // The pipeline must be optimized after the correct collator has been set on it (by
-            // injecting the ExpressionContext containing the collator). This is necessary because
-            // optimization may make string comparisons, e.g. optimizing {$eq: [<str1>, <str2>]} to
-            // a constant.
             pipeline->optimizePipeline();
 
             if (kDebugBuild && !expCtx->isExplain && !expCtx->inShard) {

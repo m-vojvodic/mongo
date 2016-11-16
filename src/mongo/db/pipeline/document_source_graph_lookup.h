@@ -94,9 +94,6 @@ public:
     static boost::intrusive_ptr<DocumentSource> createFromBson(
         BSONElement elem, const boost::intrusive_ptr<ExpressionContext>& pExpCtx);
 
-protected:
-    void doInjectExpressionContext() final;
-
 private:
     DocumentSourceGraphLookUp(
         const boost::intrusive_ptr<ExpressionContext>& expCtx,

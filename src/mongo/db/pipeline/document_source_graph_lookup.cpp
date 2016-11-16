@@ -460,22 +460,6 @@ void DocumentSourceGraphLookUp::serializeToArray(std::vector<Value>& array, bool
     }
 }
 
-void DocumentSourceGraphLookUp::doInjectExpressionContext() {
-    auto it = pExpCtx->resolvedNamespaces.find(_from.coll());
-    invariant(it != pExpCtx->resolvedNamespaces.end());
-    const auto& resolvedNamespace = it->second;
-    _fromExpCtx = pExpCtx->copyWith(resolvedNamespace.ns);
-    _fromPipeline = resolvedNamespace.pipeline;
-
-    // We append an additional BSONObj to '_fromPipeline' as a placeholder for the $match stage
-    // we'll eventually construct from the input document.
-    _fromPipeline.reserve(_fromPipeline.size() + 1);
-    _fromPipeline.push_back(BSONObj());
-
-    _frontier = pExpCtx->getValueComparator().makeUnorderedValueSet();
-    _cache.setValueComparator(pExpCtx->getValueComparator());
-}
-
 void DocumentSourceGraphLookUp::doDetachFromOperationContext() {
     _fromExpCtx->opCtx = nullptr;
 }
@@ -506,7 +490,21 @@ DocumentSourceGraphLookUp::DocumentSourceGraphLookUp(
       _maxDepth(maxDepth),
       _visited(ValueComparator::kInstance.makeUnorderedValueMap<BSONObj>()),
       _cache(expCtx->getValueComparator()),
-      _unwind(unwindSrc) {}
+      _unwind(unwindSrc) {
+    auto it = pExpCtx->resolvedNamespaces.find(_from.coll());
+    invariant(it != pExpCtx->resolvedNamespaces.end());
+    const auto& resolvedNamespace = it->second;
+    _fromExpCtx = pExpCtx->copyWith(resolvedNamespace.ns);
+    _fromPipeline = resolvedNamespace.pipeline;
+
+    // We append an additional BSONObj to '_fromPipeline' as a placeholder for the $match stage
+    // we'll eventually construct from the input document.
+    _fromPipeline.reserve(_fromPipeline.size() + 1);
+    _fromPipeline.push_back(BSONObj());
+
+    _frontier = pExpCtx->getValueComparator().makeUnorderedValueSet();
+    _cache.setValueComparator(pExpCtx->getValueComparator());
+}
 
 intrusive_ptr<DocumentSourceGraphLookUp> DocumentSourceGraphLookUp::create(
     const intrusive_ptr<ExpressionContext>& expCtx,
@@ -531,8 +529,6 @@ intrusive_ptr<DocumentSourceGraphLookUp> DocumentSourceGraphLookUp::create(
                                       maxDepth,
                                       unwindSrc));
     source->_variables.reset(new Variables());
-
-    source->injectExpressionContext(expCtx);
     return source;
 }
 
@@ -554,7 +550,7 @@ intrusive_ptr<DocumentSource> DocumentSourceGraphLookUp::createFromBson(
         const auto argName = argument.fieldNameStringData();
 
         if (argName == "startWith") {
-            startWith = Expression::parseOperand(argument, vps);
+            startWith = Expression::parseOperand(expCtx, argument, vps);
             continue;
         } else if (argName == "maxDepth") {
             uassert(40100,

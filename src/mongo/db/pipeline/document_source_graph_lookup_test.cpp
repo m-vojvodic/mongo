@@ -75,7 +75,6 @@ public:
         }
 
         pipeline.getValue()->addInitialSource(DocumentSourceMock::create(_results));
-        pipeline.getValue()->injectExpressionContext(expCtx);
         pipeline.getValue()->optimizePipeline();
 
         return pipeline;

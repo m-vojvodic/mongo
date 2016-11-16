@@ -93,6 +93,12 @@ public:
         }
         AggregationRequest request(NamespaceString("a.collection"), rawPipeline);
         intrusive_ptr<ExpressionContext> ctx = new ExpressionContext(&_opCtx, request);
+
+        // For $graphLookup and $lookup, we have to populate the resolvedNamespaces so that the
+        // operations will be able to have a resolved view definition.
+        NamespaceString lookupCollNs("a", "lookupColl");
+        ctx->resolvedNamespaces[lookupCollNs.coll()] = {lookupCollNs, std::vector<BSONObj>{}};
+
         auto outputPipe = uassertStatusOK(Pipeline::parse(request.getPipeline(), ctx));
         outputPipe->optimizePipeline();
 
@@ -246,17 +252,17 @@ class MoveMatchBeforeSort : public Base {
 
 class LookupShouldCoalesceWithUnwindOnAs : public Base {
     string inputPipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right'}}"
                ",{$unwind: {path: '$same'}}"
                "]";
     }
     string outputPipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right', unwinding: {preserveNullAndEmptyArrays: false}}}]";
     }
     string serializedPipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right'}}"
                ",{$unwind: {path: '$same'}}"
                "]";
@@ -265,17 +271,17 @@ class LookupShouldCoalesceWithUnwindOnAs : public Base {
 
 class LookupShouldCoalesceWithUnwindOnAsWithPreserveEmpty : public Base {
     string inputPipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right'}}"
                ",{$unwind: {path: '$same', preserveNullAndEmptyArrays: true}}"
                "]";
     }
     string outputPipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right', unwinding: {preserveNullAndEmptyArrays: true}}}]";
     }
     string serializedPipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right'}}"
                ",{$unwind: {path: '$same', preserveNullAndEmptyArrays: true}}"
                "]";
@@ -284,18 +290,18 @@ class LookupShouldCoalesceWithUnwindOnAsWithPreserveEmpty : public Base {
 
 class LookupShouldCoalesceWithUnwindOnAsWithIncludeArrayIndex : public Base {
     string inputPipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right'}}"
                ",{$unwind: {path: '$same', includeArrayIndex: 'index'}}"
                "]";
     }
     string outputPipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right', unwinding: {preserveNullAndEmptyArrays: false, includeArrayIndex: "
                "'index'}}}]";
     }
     string serializedPipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right'}}"
                ",{$unwind: {path: '$same', includeArrayIndex: 'index'}}"
                "]";
@@ -304,13 +310,13 @@ class LookupShouldCoalesceWithUnwindOnAsWithIncludeArrayIndex : public Base {
 
 class LookupShouldNotCoalesceWithUnwindNotOnAs : public Base {
     string inputPipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right'}}"
                ",{$unwind: {path: '$from'}}"
                "]";
     }
     string outputPipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right'}}"
                ",{$unwind: {path: '$from'}}"
                "]";
@@ -319,51 +325,59 @@ class LookupShouldNotCoalesceWithUnwindNotOnAs : public Base {
 
 class LookupShouldSwapWithMatch : public Base {
     string inputPipeJson() {
-        return "[{$lookup: {from: 'foo', as: 'asField', localField: 'y', foreignField: 'z'}}, "
+        return "[{$lookup: {from: 'lookupColl', as: 'asField', localField: 'y', foreignField: "
+               "'z'}}, "
                " {$match: {'independent': 0}}]";
     }
     string outputPipeJson() {
         return "[{$match: {independent: 0}}, "
-               " {$lookup: {from: 'foo', as: 'asField', localField: 'y', foreignField: 'z'}}]";
+               " {$lookup: {from: 'lookupColl', as: 'asField', localField: 'y', foreignField: "
+               "'z'}}]";
     }
 };
 
 class LookupShouldSplitMatch : public Base {
     string inputPipeJson() {
-        return "[{$lookup: {from: 'foo', as: 'asField', localField: 'y', foreignField: 'z'}}, "
+        return "[{$lookup: {from: 'lookupColl', as: 'asField', localField: 'y', foreignField: "
+               "'z'}}, "
                " {$match: {'independent': 0, asField: {$eq: 3}}}]";
     }
     string outputPipeJson() {
         return "[{$match: {independent: {$eq: 0}}}, "
-               " {$lookup: {from: 'foo', as: 'asField', localField: 'y', foreignField: 'z'}}, "
+               " {$lookup: {from: 'lookupColl', as: 'asField', localField: 'y', foreignField: "
+               "'z'}}, "
                " {$match: {asField: {$eq: 3}}}]";
     }
 };
 
 class LookupShouldNotAbsorbMatchOnAs : public Base {
     string inputPipeJson() {
-        return "[{$lookup: {from: 'foo', as: 'asField', localField: 'y', foreignField: 'z'}}, "
+        return "[{$lookup: {from: 'lookupColl', as: 'asField', localField: 'y', foreignField: "
+               "'z'}}, "
                " {$match: {'asField.subfield': 0}}]";
     }
     string outputPipeJson() {
-        return "[{$lookup: {from: 'foo', as: 'asField', localField: 'y', foreignField: 'z'}}, "
+        return "[{$lookup: {from: 'lookupColl', as: 'asField', localField: 'y', foreignField: "
+               "'z'}}, "
                " {$match: {'asField.subfield': 0}}]";
     }
 };
 
 class LookupShouldAbsorbUnwindMatch : public Base {
     string inputPipeJson() {
-        return "[{$lookup: {from: 'foo', as: 'asField', localField: 'y', foreignField: 'z'}}, "
+        return "[{$lookup: {from: 'lookupColl', as: 'asField', localField: 'y', foreignField: "
+               "'z'}}, "
                "{$unwind: '$asField'}, "
                "{$match: {'asField.subfield': {$eq: 1}}}]";
     }
     string outputPipeJson() {
-        return "[{$lookup: {from: 'foo', as: 'asField', localField: 'y', foreignField: 'z', "
+        return "[{$lookup: {from: 'lookupColl', as: 'asField', localField: 'y', foreignField: 'z', "
                "            unwinding: {preserveNullAndEmptyArrays: false}, "
                "            matching: {subfield: {$eq: 1}}}}]";
     }
     string serializedPipeJson() {
-        return "[{$lookup: {from: 'foo', as: 'asField', localField: 'y', foreignField: 'z'}}, "
+        return "[{$lookup: {from: 'lookupColl', as: 'asField', localField: 'y', foreignField: "
+               "'z'}}, "
                "{$unwind: {path: '$asField'}}, "
                "{$match: {'asField.subfield': {$eq: 1}}}]";
     }
@@ -371,14 +385,15 @@ class LookupShouldAbsorbUnwindMatch : public Base {
 
 class LookupShouldAbsorbUnwindAndSplitAndAbsorbMatch : public Base {
     string inputPipeJson() {
-        return "[{$lookup: {from: 'foo', as: 'asField', localField: 'y', foreignField: 'z'}}, "
+        return "[{$lookup: {from: 'lookupColl', as: 'asField', localField: 'y', foreignField: "
+               "'z'}}, "
                " {$unwind: '$asField'}, "
                " {$match: {'asField.subfield': {$eq: 1}, independentField: {$gt: 2}}}]";
     }
     string outputPipeJson() {
         return "[{$match: {independentField: {$gt: 2}}}, "
                " {$lookup: { "
-               "      from: 'foo', "
+               "      from: 'lookupColl', "
                "      as: 'asField', "
                "      localField: 'y', "
                "      foreignField: 'z', "
@@ -392,7 +407,8 @@ class LookupShouldAbsorbUnwindAndSplitAndAbsorbMatch : public Base {
     }
     string serializedPipeJson() {
         return "[{$match: {independentField: {$gt: 2}}}, "
-               " {$lookup: {from: 'foo', as: 'asField', localField: 'y', foreignField: 'z'}}, "
+               " {$lookup: {from: 'lookupColl', as: 'asField', localField: 'y', foreignField: "
+               "'z'}}, "
                " {$unwind: {path: '$asField'}}, "
                " {$match: {'asField.subfield': {$eq: 1}}}]";
     }
@@ -403,19 +419,21 @@ class LookupShouldNotSplitIndependentAndDependentOrClauses : public Base {
     // the $lookup, and if any child of the $or is independent of the 'asField', then the $match
     // cannot be absorbed by the $lookup.
     string inputPipeJson() {
-        return "[{$lookup: {from: 'foo', as: 'asField', localField: 'y', foreignField: 'z'}}, "
+        return "[{$lookup: {from: 'lookupColl', as: 'asField', localField: 'y', foreignField: "
+               "'z'}}, "
                " {$unwind: '$asField'}, "
                " {$match: {$or: [{'independent': {$gt: 4}}, "
                "                 {'asField.dependent': {$elemMatch: {a: {$eq: 1}}}}]}}]";
     }
     string outputPipeJson() {
-        return "[{$lookup: {from: 'foo', as: 'asField', localField: 'y', foreignField: 'z', "
+        return "[{$lookup: {from: 'lookupColl', as: 'asField', localField: 'y', foreignField: 'z', "
                "            unwinding: {preserveNullAndEmptyArrays: false}}}, "
                " {$match: {$or: [{'independent': {$gt: 4}}, "
                "                 {'asField.dependent': {$elemMatch: {a: {$eq: 1}}}}]}}]";
     }
     string serializedPipeJson() {
-        return "[{$lookup: {from: 'foo', as: 'asField', localField: 'y', foreignField: 'z'}}, "
+        return "[{$lookup: {from: 'lookupColl', as: 'asField', localField: 'y', foreignField: "
+               "'z'}}, "
                " {$unwind: {path: '$asField'}}, "
                " {$match: {$or: [{'independent': {$gt: 4}}, "
                "                 {'asField.dependent': {$elemMatch: {a: {$eq: 1}}}}]}}]";
@@ -424,14 +442,15 @@ class LookupShouldNotSplitIndependentAndDependentOrClauses : public Base {
 
 class LookupWithMatchOnArrayIndexFieldShouldNotCoalesce : public Base {
     string inputPipeJson() {
-        return "[{$lookup: {from: 'foo', as: 'asField', localField: 'y', foreignField: 'z'}}, "
+        return "[{$lookup: {from: 'lookupColl', as: 'asField', localField: 'y', foreignField: "
+               "'z'}}, "
                " {$unwind: {path: '$asField', includeArrayIndex: 'index'}}, "
                " {$match: {index: 0, 'asField.value': {$gt: 0}, independent: 1}}]";
     }
     string outputPipeJson() {
         return "[{$match: {independent: {$eq: 1}}}, "
                " {$lookup: { "
-               "      from: 'foo', "
+               "      from: 'lookupColl', "
                "      as: 'asField', "
                "      localField: 'y', "
                "      foreignField: 'z', "
@@ -444,7 +463,8 @@ class LookupWithMatchOnArrayIndexFieldShouldNotCoalesce : public Base {
     }
     string serializedPipeJson() {
         return "[{$match: {independent: {$eq: 1}}}, "
-               " {$lookup: {from: 'foo', as: 'asField', localField: 'y', foreignField: 'z'}}, "
+               " {$lookup: {from: 'lookupColl', as: 'asField', localField: 'y', foreignField: "
+               "'z'}}, "
                " {$unwind: {path: '$asField', includeArrayIndex: 'index'}}, "
                " {$match: {$and: [{index: {$eq: 0}}, {'asField.value': {$gt: 0}}]}}]";
     }
@@ -452,14 +472,15 @@ class LookupWithMatchOnArrayIndexFieldShouldNotCoalesce : public Base {
 
 class LookupWithUnwindPreservingNullAndEmptyArraysShouldNotCoalesce : public Base {
     string inputPipeJson() {
-        return "[{$lookup: {from: 'foo', as: 'asField', localField: 'y', foreignField: 'z'}}, "
+        return "[{$lookup: {from: 'lookupColl', as: 'asField', localField: 'y', foreignField: "
+               "'z'}}, "
                " {$unwind: {path: '$asField', preserveNullAndEmptyArrays: true}}, "
                " {$match: {'asField.value': {$gt: 0}, independent: 1}}]";
     }
     string outputPipeJson() {
         return "[{$match: {independent: {$eq: 1}}}, "
                " {$lookup: { "
-               "      from: 'foo', "
+               "      from: 'lookupColl', "
                "      as: 'asField', "
                "      localField: 'y', "
                "      foreignField: 'z', "
@@ -471,7 +492,8 @@ class LookupWithUnwindPreservingNullAndEmptyArraysShouldNotCoalesce : public Bas
     }
     string serializedPipeJson() {
         return "[{$match: {independent: {$eq: 1}}}, "
-               " {$lookup: {from: 'foo', as: 'asField', localField: 'y', foreignField: 'z'}}, "
+               " {$lookup: {from: 'lookupColl', as: 'asField', localField: 'y', foreignField: "
+               "'z'}}, "
                " {$unwind: {path: '$asField', preserveNullAndEmptyArrays: true}}, "
                " {$match: {'asField.value': {$gt: 0}}}]";
     }
@@ -479,13 +501,13 @@ class LookupWithUnwindPreservingNullAndEmptyArraysShouldNotCoalesce : public Bas
 
 class LookupDoesNotAbsorbElemMatch : public Base {
     string inputPipeJson() {
-        return "[{$lookup: {from: 'foo', as: 'x', localField: 'y', foreignField: 'z'}}, "
+        return "[{$lookup: {from: 'lookupColl', as: 'x', localField: 'y', foreignField: 'z'}}, "
                " {$unwind: '$x'}, "
                " {$match: {x: {$elemMatch: {a: 1}}}}]";
     }
     string outputPipeJson() {
         return "[{$lookup: { "
-               "             from: 'foo', "
+               "             from: 'lookupColl', "
                "             as: 'x', "
                "             localField: 'y', "
                "             foreignField: 'z', "
@@ -497,7 +519,7 @@ class LookupDoesNotAbsorbElemMatch : public Base {
                " {$match: {x: {$elemMatch: {a: 1}}}}]";
     }
     string serializedPipeJson() {
-        return "[{$lookup: {from: 'foo', as: 'x', localField: 'y', foreignField: 'z'}}, "
+        return "[{$lookup: {from: 'lookupColl', as: 'x', localField: 'y', foreignField: 'z'}}, "
                " {$unwind: {path: '$x'}}, "
                " {$match: {x: {$elemMatch: {a: 1}}}}]";
     }
@@ -505,35 +527,35 @@ class LookupDoesNotAbsorbElemMatch : public Base {
 
 class LookupDoesSwapWithMatchOnLocalField : public Base {
     string inputPipeJson() {
-        return "[{$lookup: {from: 'foo', as: 'x', localField: 'y', foreignField: 'z'}}, "
+        return "[{$lookup: {from: 'lookupColl', as: 'x', localField: 'y', foreignField: 'z'}}, "
                " {$match: {y: {$eq: 3}}}]";
     }
     string outputPipeJson() {
         return "[{$match: {y: {$eq: 3}}}, "
-               " {$lookup: {from: 'foo', as: 'x', localField: 'y', foreignField: 'z'}}]";
+               " {$lookup: {from: 'lookupColl', as: 'x', localField: 'y', foreignField: 'z'}}]";
     }
 };
 
 class LookupDoesSwapWithMatchOnFieldWithSameNameAsForeignField : public Base {
     string inputPipeJson() {
-        return "[{$lookup: {from: 'foo', as: 'x', localField: 'y', foreignField: 'z'}}, "
+        return "[{$lookup: {from: 'lookupColl', as: 'x', localField: 'y', foreignField: 'z'}}, "
                " {$match: {z: {$eq: 3}}}]";
     }
     string outputPipeJson() {
         return "[{$match: {z: {$eq: 3}}}, "
-               " {$lookup: {from: 'foo', as: 'x', localField: 'y', foreignField: 'z'}}]";
+               " {$lookup: {from: 'lookupColl', as: 'x', localField: 'y', foreignField: 'z'}}]";
     }
 };
 
 class LookupDoesNotAbsorbUnwindOnSubfieldOfAsButStillMovesMatch : public Base {
     string inputPipeJson() {
-        return "[{$lookup: {from: 'foo', as: 'x', localField: 'y', foreignField: 'z'}}, "
+        return "[{$lookup: {from: 'lookupColl', as: 'x', localField: 'y', foreignField: 'z'}}, "
                " {$unwind: {path: '$x.subfield'}}, "
                " {$match: {'independent': 2, 'x.dependent': 2}}]";
     }
     string outputPipeJson() {
         return "[{$match: {'independent': {$eq: 2}}}, "
-               " {$lookup: {from: 'foo', as: 'x', localField: 'y', foreignField: 'z'}}, "
+               " {$lookup: {from: 'lookupColl', as: 'x', localField: 'y', foreignField: 'z'}}, "
                " {$match: {'x.dependent': {$eq: 2}}}, "
                " {$unwind: {path: '$x.subfield'}}]";
     }
@@ -645,58 +667,61 @@ class UnwindBeforeDoubleMatchShouldRepeatedlyOptimize : public Base {
 
 class GraphLookupShouldCoalesceWithUnwindOnAs : public Base {
     string inputPipeJson() final {
-        return "[{$graphLookup: {from: 'a', as: 'out', connectToField: 'b', connectFromField: 'c', "
-               "                 startWith: '$d'}}, "
+        return "[{$graphLookup: {from: 'lookupColl', as: 'out', connectToField: 'b', "
+               "                 connectFromField: 'c', startWith: '$d'}}, "
                " {$unwind: '$out'}]";
     }
 
     string outputPipeJson() final {
-        return "[{$graphLookup: {from: 'a', as: 'out', connectToField: 'b', connectFromField: 'c', "
-               "                 startWith: '$d', unwinding: {preserveNullAndEmptyArrays: "
-               "false}}}]";
+        return "[{$graphLookup: {from: 'lookupColl', as: 'out', connectToField: 'b', "
+               "                 connectFromField: 'c', startWith: '$d', "
+               "                 unwinding: {preserveNullAndEmptyArrays: false}}}]";
     }
 
     string serializedPipeJson() final {
-        return "[{$graphLookup: {from: 'a', as: 'out', connectToField: 'b', connectFromField: 'c', "
-               "                 startWith: '$d'}}, "
+        return "[{$graphLookup: {from: 'lookupColl', as: 'out', connectToField: 'b', "
+               "                 connectFromField: 'c', startWith: '$d'}}, "
                " {$unwind: {path: '$out'}}]";
     }
 };
 
 class GraphLookupShouldCoalesceWithUnwindOnAsWithPreserveEmpty : public Base {
     string inputPipeJson() final {
-        return "[{$graphLookup: {from: 'a', as: 'out', connectToField: 'b', connectFromField: 'c', "
-               "                 startWith: '$d'}}, "
+        return "[{$graphLookup: {from: 'lookupColl', as: 'out', connectToField: 'b', "
+               "                 connectFromField: 'c', startWith: '$d'}}, "
                " {$unwind: {path: '$out', preserveNullAndEmptyArrays: true}}]";
     }
 
     string outputPipeJson() final {
-        return "[{$graphLookup: {from: 'a', as: 'out', connectToField: 'b', connectFromField: 'c', "
-               "                 startWith: '$d', unwinding: {preserveNullAndEmptyArrays: true}}}]";
+        return "[{$graphLookup: {from: 'lookupColl', as: 'out', connectToField: 'b', "
+               "                 connectFromField: 'c', startWith: '$d', "
+               "                 unwinding: {preserveNullAndEmptyArrays: true}}}]";
     }
 
     string serializedPipeJson() final {
-        return "[{$graphLookup: {from: 'a', as: 'out', connectToField: 'b', connectFromField: 'c', "
-               "                 startWith: '$d'}}, "
+        return "[{$graphLookup: {from: 'lookupColl', as: 'out', connectToField: 'b', "
+               "                 connectFromField: 'c', startWith: '$d'}}, "
                " {$unwind: {path: '$out', preserveNullAndEmptyArrays: true}}]";
     }
 };
 
 class GraphLookupShouldCoalesceWithUnwindOnAsWithIncludeArrayIndex : public Base {
     string inputPipeJson() final {
-        return "[{$graphLookup: {from: 'a', as: 'out', connectToField: 'b', connectFromField: 'c', "
-               "                 startWith: '$d'}}, "
+        return "[{$graphLookup: {from: 'lookupColl', as: 'out', connectToField: 'b', "
+               "                 connectFromField: 'c', startWith: '$d'}}, "
                " {$unwind: {path: '$out', includeArrayIndex: 'index'}}]";
     }
 
     string outputPipeJson() final {
-        return "[{$graphLookup: {from: 'a', as: 'out', connectToField: 'b', connectFromField: 'c', "
-               "                 startWith: '$d', unwinding: {preserveNullAndEmptyArrays: false, "
-               "                                             includeArrayIndex: 'index'}}}]";
+        return "[{$graphLookup: {from: 'lookupColl', as: 'out', connectToField: 'b', "
+               "                 connectFromField: 'c', startWith: '$d', "
+               "                 unwinding: {preserveNullAndEmptyArrays: false, "
+               "                             includeArrayIndex: 'index'}}}]";
     }
 
     string serializedPipeJson() final {
-        return "[{$graphLookup: {from: 'a', as: 'out', connectToField: 'b', connectFromField: 'c', "
+        return "[{$graphLookup: {from: 'lookupColl', as: 'out', connectToField: 'b', "
+               "                 connectFromField: 'c', "
                "                 startWith: '$d'}}, "
                " {$unwind: {path: '$out', includeArrayIndex: 'index'}}]";
     }
@@ -704,14 +729,14 @@ class GraphLookupShouldCoalesceWithUnwindOnAsWithIncludeArrayIndex : public Base
 
 class GraphLookupShouldNotCoalesceWithUnwindNotOnAs : public Base {
     string inputPipeJson() final {
-        return "[{$graphLookup: {from: 'a', as: 'out', connectToField: 'b', connectFromField: 'c', "
-               "                 startWith: '$d'}}, "
+        return "[{$graphLookup: {from: 'lookupColl', as: 'out', connectToField: 'b', "
+               "                 connectFromField: 'c', startWith: '$d'}}, "
                " {$unwind: '$nottherightthing'}]";
     }
 
     string outputPipeJson() final {
-        return "[{$graphLookup: {from: 'a', as: 'out', connectToField: 'b', connectFromField: 'c', "
-               "                 startWith: '$d'}}, "
+        return "[{$graphLookup: {from: 'lookupColl', as: 'out', connectToField: 'b', "
+               "                 connectFromField: 'c', startWith: '$d'}}, "
                " {$unwind: {path: '$nottherightthing'}}]";
     }
 };
@@ -719,7 +744,7 @@ class GraphLookupShouldNotCoalesceWithUnwindNotOnAs : public Base {
 class GraphLookupShouldSwapWithMatch : public Base {
     string inputPipeJson() {
         return "[{$graphLookup: {"
-               "    from: 'coll2',"
+               "    from: 'lookupColl',"
                "    as: 'results',"
                "    connectToField: 'to',"
                "    connectFromField: 'from',"
@@ -731,7 +756,7 @@ class GraphLookupShouldSwapWithMatch : public Base {
     string outputPipeJson() {
         return "[{$match: {independent: 'x'}},"
                " {$graphLookup: {"
-               "    from: 'coll2',"
+               "    from: 'lookupColl',"
                "    as: 'results',"
                "    connectToField: 'to',"
                "    connectFromField: 'from',"
@@ -870,6 +895,12 @@ public:
         }
         AggregationRequest request(NamespaceString("a.collection"), rawPipeline);
         intrusive_ptr<ExpressionContext> ctx = new ExpressionContext(&_opCtx, request);
+
+        // For $graphLookup and $lookup, we have to populate the resolvedNamespaces so that the
+        // operations will be able to have a resolved view definition.
+        NamespaceString lookupCollNs("a", "lookupColl");
+        ctx->resolvedNamespaces[lookupCollNs.coll()] = {lookupCollNs, std::vector<BSONObj>{}};
+
         mergePipe = uassertStatusOK(Pipeline::parse(request.getPipeline(), ctx));
         mergePipe->optimizePipeline();
 
@@ -1063,7 +1094,7 @@ namespace coalesceLookUpAndUnwind {
 
 class ShouldCoalesceUnwindOnAs : public Base {
     string inputPipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right'}}"
                ",{$unwind: {path: '$same'}}"
                "]";
@@ -1072,14 +1103,14 @@ class ShouldCoalesceUnwindOnAs : public Base {
         return "[]";
     }
     string mergePipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right', unwinding: {preserveNullAndEmptyArrays: false}}}]";
     }
 };
 
 class ShouldCoalesceUnwindOnAsWithPreserveEmpty : public Base {
     string inputPipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right'}}"
                ",{$unwind: {path: '$same', preserveNullAndEmptyArrays: true}}"
                "]";
@@ -1088,14 +1119,14 @@ class ShouldCoalesceUnwindOnAsWithPreserveEmpty : public Base {
         return "[]";
     }
     string mergePipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right', unwinding: {preserveNullAndEmptyArrays: true}}}]";
     }
 };
 
 class ShouldCoalesceUnwindOnAsWithIncludeArrayIndex : public Base {
     string inputPipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right'}}"
                ",{$unwind: {path: '$same', includeArrayIndex: 'index'}}"
                "]";
@@ -1104,7 +1135,7 @@ class ShouldCoalesceUnwindOnAsWithIncludeArrayIndex : public Base {
         return "[]";
     }
     string mergePipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right', unwinding: {preserveNullAndEmptyArrays: false, includeArrayIndex: "
                "'index'}}}]";
     }
@@ -1112,7 +1143,7 @@ class ShouldCoalesceUnwindOnAsWithIncludeArrayIndex : public Base {
 
 class ShouldNotCoalesceUnwindNotOnAs : public Base {
     string inputPipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right'}}"
                ",{$unwind: {path: '$from'}}"
                "]";
@@ -1121,7 +1152,7 @@ class ShouldNotCoalesceUnwindNotOnAs : public Base {
         return "[]";
     }
     string mergePipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right'}}"
                ",{$unwind: {path: '$from'}}"
                "]";
@@ -1176,14 +1207,14 @@ class LookUp : public needsPrimaryShardMergerBase {
         return true;
     }
     string inputPipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right'}}]";
     }
     string shardPipeJson() {
         return "[]";
     }
     string mergePipeJson() {
-        return "[{$lookup: {from : 'coll2', as : 'same', localField: 'left', foreignField: "
+        return "[{$lookup: {from : 'lookupColl', as : 'same', localField: 'left', foreignField: "
                "'right'}}]";
     }
 };

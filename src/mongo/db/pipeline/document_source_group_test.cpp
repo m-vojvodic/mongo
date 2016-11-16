@@ -220,7 +220,6 @@ protected:
         expressionContext->tempDir = _tempDir.path();
 
         _group = DocumentSourceGroup::createFromBson(specElement, expressionContext);
-        _group->injectExpressionContext(expressionContext);
         assertRoundTrips(_group);
     }
     DocumentSourceGroup* group() {
