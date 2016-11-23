@@ -85,7 +85,7 @@ public:
                      int options,
                      std::string& errmsg,
                      BSONObjBuilder& result) {
-        const string target = cmdObj.firstElement().valuestrsafe();
+        const string target = cmdObj.firstElement().str();
 
         const auto shardStatus = grid.shardRegistry()->getShard(txn, ShardId(target));
         if (!shardStatus.isOK()) {

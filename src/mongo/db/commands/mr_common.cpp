@@ -123,7 +123,7 @@ void addPrivilegesRequiredForMapReduce(Command* commandTemplate,
 
         ResourcePattern outputResource(
             ResourcePattern::forExactNamespace(NamespaceString(outputOptions.finalNamespace)));
-        uassert(17143,
+        uassert(ErrorCodes::InvalidNamespace,
                 mongoutils::str::stream() << "Invalid target namespace "
                                           << outputResource.ns().ns(),
                 outputResource.ns().isValid());

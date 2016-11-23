@@ -91,31 +91,29 @@ public:
                      int,
                      string& errmsg,
                      BSONObjBuilder& result) {
-        string source = cmdObj.getStringField(getName());
-        string target = cmdObj.getStringField("to");
+        const NamespaceString source(cmdObj.getField(getName()).valueStringData());
+        const NamespaceString target(cmdObj.getField("to").valueStringData());
 
-        if (!NamespaceString::validCollectionComponent(target.c_str())) {
-            errmsg = "invalid collection name: " + target;
-            return false;
-        }
-        if (source.empty() || target.empty()) {
-            errmsg = "invalid command syntax";
-            return false;
-        }
+        uassert(ErrorCodes::InvalidNamespace,
+                str::stream() << "Invalid source namespace: " << source.ns(),
+                source.isValid());
+        uassert(ErrorCodes::InvalidNamespace,
+                str::stream() << "Invalid target namespace: " << target.ns(),
+                target.isValid());
 
         if ((repl::getGlobalReplicationCoordinator()->getReplicationMode() !=
              repl::ReplicationCoordinator::modeNone)) {
-            if (NamespaceString(source).isOplog()) {
+            if (source.isOplog()) {
                 errmsg = "can't rename live oplog while replicating";
                 return false;
             }
-            if (NamespaceString(target).isOplog()) {
+            if (target.isOplog()) {
                 errmsg = "can't rename to live oplog while replicating";
                 return false;
             }
         }
 
-        if (NamespaceString::oplog(source) != NamespaceString::oplog(target)) {
+        if (source.isOplog() != target.isOplog()) {
             errmsg = "If either the source or target of a rename is an oplog name, both must be";
             return false;
         }
@@ -132,16 +130,15 @@ public:
             return false;
         }
 
-        if (NamespaceString(source).coll() == "system.indexes" ||
-            NamespaceString(target).coll() == "system.indexes") {
+        if (source.coll() == "system.indexes" || target.coll() == "system.indexes") {
             errmsg = "renaming system.indexes is not allowed";
             return false;
         }
 
         return appendCommandStatus(result,
                                    renameCollection(txn,
-                                                    NamespaceString(source),
-                                                    NamespaceString(target),
+                                                    source,
+                                                    target,
                                                     cmdObj["dropTarget"].trueValue(),
                                                     cmdObj["stayTemp"].trueValue()));
     }

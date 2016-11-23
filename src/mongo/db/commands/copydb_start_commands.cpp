@@ -176,7 +176,11 @@ public:
                      int,
                      string& errmsg,
                      BSONObjBuilder& result) {
-        const string fromDb = cmdObj.getStringField("fromdb");
+        const string fromDb = cmdObj.getField("fromdb").str();
+        uassert(
+            ErrorCodes::InvalidNamespace,
+            str::stream() << "Invalid 'fromdb' name: " << fromDb,
+            NamespaceString::validDBName(fromDb, NamespaceString::DollarInDbNameBehavior::Allow));
 
         string fromHost = cmdObj.getStringField("fromhost");
         if (fromHost.empty()) {

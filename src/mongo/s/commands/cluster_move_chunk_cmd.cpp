@@ -129,7 +129,7 @@ public:
             }
         }
 
-        const string toString = cmdObj["to"].valuestrsafe();
+        const string toString = cmdObj["to"].str();
         if (!toString.size()) {
             errmsg = "you have to specify where you want to move the chunk";
             return false;

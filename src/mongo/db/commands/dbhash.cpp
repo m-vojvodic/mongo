@@ -102,12 +102,12 @@ public:
         }
 
         list<string> colls;
-        const string ns = parseNs(dbname, cmdObj);
+        const NamespaceString nss(parseNs(dbname, cmdObj));
 
         // We lock the entire database in S-mode in order to ensure that the contents will not
         // change for the snapshot.
         ScopedTransaction scopedXact(txn, MODE_IS);
-        AutoGetDb autoDb(txn, ns, MODE_S);
+        AutoGetDb autoDb(txn, nss.ns(), MODE_S);
         Database* db = autoDb.getDb();
         if (db) {
             db->getDatabaseCatalogEntry()->getCollectionNamespaces(&colls);

@@ -338,7 +338,7 @@ public:
     Status checkAuthForCommand(Client* client,
                                const std::string& dbname,
                                const BSONObj& cmdObj) final {
-        NamespaceString nss(parseNs(dbname, cmdObj));
+        const NamespaceString nss(parseNsCollectionRequired(dbname, cmdObj));
         return AuthorizationSession::get(client)->checkAuthForAggregate(nss, cmdObj);
     }
 
@@ -608,12 +608,7 @@ public:
                      int options,
                      string& errmsg,
                      BSONObjBuilder& result) {
-        const std::string ns = parseNs(db, cmdObj);
-        if (nsToCollectionSubstring(ns).empty()) {
-            errmsg = "missing collection name";
-            return false;
-        }
-        NamespaceString nss(ns);
+        const NamespaceString nss(parseNsCollectionRequired(db, cmdObj));
 
         // Parse the options for this request.
         auto request = AggregationRequest::parseFromBSON(nss, cmdObj);

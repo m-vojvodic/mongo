@@ -279,7 +279,10 @@ void JSReducer::_reduce(const BSONList& tuples, BSONObj& key, int& endSizeEstima
 
 Config::Config(const string& _dbname, const BSONObj& cmdObj) {
     dbname = _dbname;
-    ns = dbname + "." + cmdObj.firstElement().valuestrsafe();
+    uassert(ErrorCodes::TypeMismatch,
+            str::stream() << "'mapReduce' option must be specified as a string",
+            cmdObj.firstElement().type() == BSONType::String);
+    ns = NamespaceString(dbname, cmdObj.firstElement().valueStringData()).ns();
 
     verbose = cmdObj["verbose"].trueValue();
     jsMode = cmdObj["jsMode"].trueValue();
@@ -306,9 +309,10 @@ Config::Config(const string& _dbname, const BSONObj& cmdObj) {
     }
 
     if (outputOptions.outType != INMEMORY) {  // setup temp collection name
-        tempNamespace = str::stream()
-            << (outputOptions.outDB.empty() ? dbname : outputOptions.outDB) << ".tmp.mr."
-            << cmdObj.firstElement().String() << "_" << JOB_NUMBER.fetchAndAdd(1);
+        const StringData tempDb(outputOptions.outDB.empty() ? dbname : outputOptions.outDB);
+        const StringData tempColl = str::stream() << "tmp.mr." << cmdObj.firstElement().String()
+                                                  << "_" << JOB_NUMBER.fetchAndAdd(1);
+        tempNamespace = NamespaceString(tempDb, tempColl).ns();
         incLong = tempNamespace + "_inc";
     }
 

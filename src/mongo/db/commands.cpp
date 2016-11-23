@@ -106,7 +106,7 @@ string Command::parseNs(const string& dbname, const BSONObj& cmdObj) const {
     if (first.type() != mongo::String)
         return dbname;
 
-    string coll = cmdObj.firstElement().valuestr();
+    StringData coll = cmdObj.firstElement().valueStringData();
 #if defined(CLC)
     DEV if (mongoutils::str::startsWith(coll, dbname + '.')) {
         log() << "DEBUG parseNs Command's collection name looks like it includes the db name\n"
@@ -116,13 +116,13 @@ string Command::parseNs(const string& dbname, const BSONObj& cmdObj) const {
         dassert(false);
     }
 #endif
-    return dbname + '.' + coll;
+    return dbname + '.' + coll.toString();
 }
 
 ResourcePattern Command::parseResourcePattern(const std::string& dbname,
                                               const BSONObj& cmdObj) const {
-    std::string ns = parseNs(dbname, cmdObj);
-    if (ns.find('.') == std::string::npos) {
+    const std::string ns = parseNs(dbname, cmdObj);
+    if (!NamespaceString::validCollectionComponent(ns)) {
         return ResourcePattern::forDatabaseName(ns);
     }
     return ResourcePattern::forExactNamespace(NamespaceString(ns));

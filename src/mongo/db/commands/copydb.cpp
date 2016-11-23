@@ -134,21 +134,25 @@ public:
         }
 
         CloneOptions cloneOptions;
-        cloneOptions.fromDB = cmdObj.getStringField("fromdb");
+        cloneOptions.fromDB = cmdObj.getField("fromdb").str();
         cloneOptions.slaveOk = cmdObj["slaveOk"].trueValue();
         cloneOptions.useReplAuth = false;
         cloneOptions.snapshot = true;
 
-        string todb = cmdObj.getStringField("todb");
-        if (fromhost.empty() || todb.empty() || cloneOptions.fromDB.empty()) {
+        const string todb = cmdObj.getField("todb").str();
+
+        uassert(ErrorCodes::InvalidNamespace,
+                str::stream() << "Invalid 'todb' name: " << todb,
+                NamespaceString::validDBName(todb, NamespaceString::DollarInDbNameBehavior::Allow));
+        uassert(ErrorCodes::InvalidNamespace,
+                str::stream() << "Invalid 'fromdb' name: " << cloneOptions.fromDB,
+                NamespaceString::validDBName(cloneOptions.fromDB,
+                                             NamespaceString::DollarInDbNameBehavior::Allow));
+
+        if (fromhost.empty()) {
             errmsg =
                 "params missing - {copydb: 1, fromhost: <connection string>, "
                 "fromdb: <db>, todb: <db>}";
-            return false;
-        }
-
-        if (!NamespaceString::validDBName(todb, NamespaceString::DollarInDbNameBehavior::Allow)) {
-            errmsg = "invalid todb name: " + todb;
             return false;
         }
 

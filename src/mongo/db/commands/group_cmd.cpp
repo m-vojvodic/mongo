@@ -98,18 +98,17 @@ private:
     virtual Status checkAuthForCommand(Client* client,
                                        const std::string& dbname,
                                        const BSONObj& cmdObj) {
-        std::string ns = parseNs(dbname, cmdObj);
+        const NamespaceString nss(parseNs(dbname, cmdObj));
+
         if (!AuthorizationSession::get(client)->isAuthorizedForActionsOnNamespace(
-                NamespaceString(ns), ActionType::find)) {
+                nss, ActionType::find)) {
             return Status(ErrorCodes::Unauthorized, "unauthorized");
         }
         return Status::OK();
     }
 
     virtual std::string parseNs(const std::string& dbname, const BSONObj& cmdObj) const {
-        const BSONObj& p = cmdObj.firstElement().embeddedObjectUserCheck();
-        uassert(17211, "ns has to be set", p["ns"].type() == String);
-        return dbname + "." + p["ns"].String();
+        return parseNsFullyQualified(dbname, cmdObj.firstElement().embeddedObjectUserCheck());
     }
 
     virtual Status explain(OperationContext* txn,
@@ -230,7 +229,7 @@ private:
     Status _parseRequest(const std::string& dbname,
                          const BSONObj& cmdObj,
                          GroupRequest* request) const {
-        request->ns = parseNs(dbname, cmdObj);
+        request->ns = NamespaceString(parseNs(dbname, cmdObj));
 
         // By default, group requests are regular group not explain of group.
         request->explain = false;

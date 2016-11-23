@@ -104,10 +104,10 @@ public:
                      BSONObjBuilder& result) {
         const string dbname = parseNs("", cmdObj);
 
-        if (dbname.empty() || !nsIsDbOnly(dbname)) {
-            errmsg = "invalid db name specified: " + dbname;
-            return false;
-        }
+        uassert(
+            ErrorCodes::InvalidNamespace,
+            str::stream() << "invalid db name specified: " << dbname,
+            NamespaceString::validDBName(dbname, NamespaceString::DollarInDbNameBehavior::Allow));
 
         if (dbname == "admin" || dbname == "config" || dbname == "local") {
             errmsg = "can't move primary for " + dbname + " database";
@@ -124,7 +124,7 @@ public:
 
         shared_ptr<DBConfig> config = status.getValue();
 
-        const string to = cmdObj["to"].valuestrsafe();
+        const string to = cmdObj["to"].str();
         if (!to.size()) {
             errmsg = "you have to specify where you want to move it";
             return false;
