@@ -253,8 +253,8 @@ class NotAllowedOnShardedCollectionCmd : public PublicGridCommand {
 public:
     NotAllowedOnShardedCollectionCmd(const char* n) : PublicGridCommand(n) {}
 
-    virtual std::string parseNs(const std::string& dbName, const BSONObj& cmdObj) const {
-        return parseNsFullyQualified(dbName, cmdObj);
+    virtual std::string parseNs(const std::string& dbname, const BSONObj& cmdObj) const {
+        return parseNsCollectionRequired(dbname, cmdObj).ns();
     }
 
     virtual bool run(OperationContext* txn,
@@ -431,7 +431,7 @@ public:
     virtual Status checkAuthForCommand(Client* client,
                                        const std::string& dbname,
                                        const BSONObj& cmdObj) {
-        NamespaceString nss(parseNsCollectionRequired(dbname, cmdObj));
+        const NamespaceString nss(parseNsCollectionRequired(dbname, cmdObj));
         return AuthorizationSession::get(client)->checkAuthForCollMod(nss, cmdObj);
     }
 
@@ -518,7 +518,7 @@ public:
     virtual Status checkAuthForCommand(Client* client,
                                        const std::string& dbname,
                                        const BSONObj& cmdObj) {
-        NamespaceString nss(parseNsCollectionRequired(dbname, cmdObj));
+        const NamespaceString nss(parseNsCollectionRequired(dbname, cmdObj));
         return AuthorizationSession::get(client)->checkAuthForCreate(nss, cmdObj);
     }
     virtual bool supportsWriteConcern(const BSONObj& cmd) const override {
@@ -1002,8 +1002,13 @@ public:
         return true;
     }
 
-    virtual std::string parseNs(const std::string& dbName, const BSONObj& cmdObj) const {
-        return parseNsFullyQualified(dbName, cmdObj.firstElement().embeddedObjectUserCheck());
+    virtual std::string parseNs(const std::string& dbname, const BSONObj& cmdObj) const {
+        const NamespaceString nss(
+            dbname, cmdObj.firstElement().embeddedObjectUserCheck().getField("ns").str());
+        uassert(ErrorCodes::InvalidNamespace,
+                str::stream() << "Invalid namespace: " << nss.ns(),
+                nss.isValid());
+        return nss.ns();
     }
 
     Status explain(OperationContext* txn,
@@ -1766,7 +1771,7 @@ public:
 
         // Check for the listIndexes ActionType on the database, or find on system.indexes for pre
         // 3.0 systems.
-        NamespaceString ns(parseNsCollectionRequired(dbname, cmdObj));
+        const NamespaceString ns(parseNsCollectionRequired(dbname, cmdObj));
 
         if (authzSession->isAuthorizedForActionsOnResource(ResourcePattern::forExactNamespace(ns),
                                                            ActionType::listIndexes) ||

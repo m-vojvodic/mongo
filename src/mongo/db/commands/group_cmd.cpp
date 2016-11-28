@@ -108,7 +108,12 @@ private:
     }
 
     virtual std::string parseNs(const std::string& dbname, const BSONObj& cmdObj) const {
-        return parseNsFullyQualified(dbname, cmdObj.firstElement().embeddedObjectUserCheck());
+        const NamespaceString nss(
+            dbname, cmdObj.firstElement().embeddedObjectUserCheck().getField("ns").str());
+        uassert(ErrorCodes::InvalidNamespace,
+                str::stream() << "Invalid namespace: " << nss.ns(),
+                nss.isValid());
+        return nss.ns();
     }
 
     virtual Status explain(OperationContext* txn,

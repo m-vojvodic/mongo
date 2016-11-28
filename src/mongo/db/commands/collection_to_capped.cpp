@@ -85,15 +85,14 @@ public:
              int,
              string& errmsg,
              BSONObjBuilder& result) {
-        const NamespaceString fromNss(dbname,
-                                      jsobj.getField("cloneCollectionAsCapped").valueStringData());
-        const NamespaceString toNss(dbname, jsobj.getField("toCollection").valueStringData());
+        const StringData from(jsobj.getField("cloneCollectionAsCapped").valueStringData());
+        const StringData to(jsobj.getField("toCollection").valueStringData());
         uassert(ErrorCodes::InvalidNamespace,
-                str::stream() << "Invalid source namespace: " << fromNss.ns(),
-                fromNss.isValid());
+                str::stream() << "Invalid source collection name: " << from,
+                NamespaceString::validCollectionName(from));
         uassert(ErrorCodes::InvalidNamespace,
-                str::stream() << "Invalid target namespace: " << toNss.ns(),
-                toNss.isValid());
+                str::stream() << "Invalid target collection name: " << to,
+                NamespaceString::validCollectionName(to));
         double size = jsobj.getField("size").number();
         bool temp = jsobj.getField("temp").trueValue();
 
@@ -105,13 +104,13 @@ public:
         ScopedTransaction transaction(txn, MODE_IX);
         AutoGetDb autoDb(txn, dbname, MODE_X);
 
-        if (!repl::getGlobalReplicationCoordinator()->canAcceptWritesFor(toNss)) {
+        NamespaceString nss(dbname, to);
+        if (!repl::getGlobalReplicationCoordinator()->canAcceptWritesFor(nss)) {
             return appendCommandStatus(
                 result,
                 Status(ErrorCodes::NotMaster,
-                       str::stream() << "Not primary while cloning collection " << fromNss.ns()
-                                     << " to "
-                                     << toNss.ns()
+                       str::stream() << "Not primary while cloning collection " << from << " to "
+                                     << to
                                      << " (as capped)"));
         }
 
@@ -123,7 +122,8 @@ public:
                        str::stream() << "database " << dbname << " not found"));
         }
 
-        Status status = cloneCollectionAsCapped(txn, db, fromNss.ns(), toNss.ns(), size, temp);
+        Status status =
+            cloneCollectionAsCapped(txn, db, from.toString(), to.toString(), size, temp);
         return appendCommandStatus(result, status);
     }
 } cmdCloneCollectionAsCapped;

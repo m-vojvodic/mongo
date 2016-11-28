@@ -106,7 +106,9 @@ public:
                      int options,
                      std::string& errmsg,
                      BSONObjBuilder& result) {
-        const NamespaceString nss(parseNsCollectionRequired(dbname, cmdObj));
+        const NamespaceString nss(parseNs(dbname, cmdObj));
+        uassert(
+            ErrorCodes::InvalidNamespace, "count command requires valid namespace", nss.isValid());
 
         long long skip = 0;
 
@@ -251,7 +253,11 @@ public:
                            ExplainCommon::Verbosity verbosity,
                            const rpc::ServerSelectionMetadata& serverSelectionMetadata,
                            BSONObjBuilder* out) const {
-        const NamespaceString nss(parseNsCollectionRequired(dbname, cmdObj));
+        const NamespaceString nss(parseNs(dbname, cmdObj));
+        if (!nss.isValid()) {
+            return Status{ErrorCodes::InvalidNamespace,
+                          str::stream() << "Invalid collection name: " << nss.ns()};
+        }
 
         // Extract the targeting query.
         BSONObj targetingQuery;

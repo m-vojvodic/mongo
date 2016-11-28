@@ -282,7 +282,11 @@ Config::Config(const string& _dbname, const BSONObj& cmdObj) {
     uassert(ErrorCodes::TypeMismatch,
             str::stream() << "'mapReduce' option must be specified as a string",
             cmdObj.firstElement().type() == BSONType::String);
-    ns = NamespaceString(dbname, cmdObj.firstElement().valueStringData()).ns();
+    const NamespaceString nss(dbname, cmdObj.firstElement().valueStringData());
+    uassert(ErrorCodes::InvalidNamespace,
+            str::stream() << "Invalid namespace: " << nss.ns(),
+            nss.isValid());
+    ns = nss.ns();
 
     verbose = cmdObj["verbose"].trueValue();
     jsMode = cmdObj["jsMode"].trueValue();
@@ -309,10 +313,11 @@ Config::Config(const string& _dbname, const BSONObj& cmdObj) {
     }
 
     if (outputOptions.outType != INMEMORY) {  // setup temp collection name
-        const StringData tempDb(outputOptions.outDB.empty() ? dbname : outputOptions.outDB);
-        const StringData tempColl = str::stream() << "tmp.mr." << cmdObj.firstElement().String()
-                                                  << "_" << JOB_NUMBER.fetchAndAdd(1);
-        tempNamespace = NamespaceString(tempDb, tempColl).ns();
+        tempNamespace =
+            NamespaceString(outputOptions.outDB.empty() ? dbname : outputOptions.outDB,
+                            str::stream() << "tmp.mr." << cmdObj.firstElement().String() << "_"
+                                          << JOB_NUMBER.fetchAndAdd(1))
+                .ns();
         incLong = tempNamespace + "_inc";
     }
 
