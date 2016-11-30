@@ -177,7 +177,7 @@ StatusWith<GetMoreRequest> GetMoreRequest::parseFromBSON(const std::string& dbna
     }
 
     GetMoreRequest request(
-        *nss, *cursorid, batchSize, awaitDataTimeout, term, lastKnownCommittedOpTime);
+        std::move(*nss), *cursorid, batchSize, awaitDataTimeout, term, lastKnownCommittedOpTime);
     Status validStatus = request.isValid();
     if (!validStatus.isOK()) {
         return validStatus;

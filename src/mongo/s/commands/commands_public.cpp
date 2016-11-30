@@ -253,10 +253,6 @@ class NotAllowedOnShardedCollectionCmd : public PublicGridCommand {
 public:
     NotAllowedOnShardedCollectionCmd(const char* n) : PublicGridCommand(n) {}
 
-    virtual std::string parseNs(const std::string& dbname, const BSONObj& cmdObj) const {
-        return parseNsCollectionRequired(dbname, cmdObj).ns();
-    }
-
     virtual bool run(OperationContext* txn,
                      const string& dbName,
                      BSONObj& cmdObj,
@@ -610,12 +606,18 @@ public:
              int,
              string& errmsg,
              BSONObjBuilder& result) {
-        const NamespaceString fullnsFrom(cmdObj.firstElement().valueStringData());
+        const NamespaceString fullnsFrom(cmdObj.firstElement().checkAndGetStringData());
+        uassert(ErrorCodes::InvalidNamespace,
+                str::stream() << "Invalid source namespace: " << fullnsFrom.ns(),
+                fullnsFrom.isValid());
         const string dbNameFrom = fullnsFrom.db().toString();
         auto confFrom =
             uassertStatusOK(Grid::get(txn)->catalogCache()->getDatabase(txn, dbNameFrom));
 
-        const NamespaceString fullnsTo(cmdObj["to"].valueStringData());
+        const NamespaceString fullnsTo(cmdObj["to"].checkAndGetStringData());
+        uassert(ErrorCodes::InvalidNamespace,
+                str::stream() << "Invalid target namespace: " << fullnsTo.ns(),
+                fullnsTo.isValid());
         const string dbNameTo = fullnsTo.db().toString();
         auto confTo = uassertStatusOK(Grid::get(txn)->catalogCache()->getDatabase(txn, dbNameTo));
 
@@ -656,7 +658,7 @@ public:
              int,
              string& errmsg,
              BSONObjBuilder& result) {
-        const string todb = cmdObj.getField("todb").str();
+        const std::string todb = cmdObj.getField("todb").String();
         uassert(ErrorCodes::InvalidNamespace,
                 "Invalid todb argument",
                 NamespaceString::validDBName(todb, NamespaceString::DollarInDbNameBehavior::Allow));
@@ -670,7 +672,7 @@ public:
         if (!fromhost.empty()) {
             return adminPassthrough(txn, scopedToDb.db(), cmdObj, result);
         } else {
-            const string fromdb = cmdObj.getField("fromdb").str();
+            const std::string fromdb = cmdObj.getField("fromdb").String();
             uassert(
                 ErrorCodes::InvalidNamespace,
                 "invalid fromdb argument",
@@ -981,6 +983,10 @@ public:
         return true;
     }
 
+    virtual std::string parseNs(const std::string& dbname, const BSONObj& cmdObj) const {
+        return parseNsCollectionRequired(dbname, cmdObj).ns();
+    }
+
 } convertToCappedCmd;
 
 class GroupCmd : public NotAllowedOnShardedCollectionCmd {
@@ -1004,7 +1010,7 @@ public:
 
     virtual std::string parseNs(const std::string& dbname, const BSONObj& cmdObj) const {
         const NamespaceString nss(
-            dbname, cmdObj.firstElement().embeddedObjectUserCheck().getField("ns").str());
+            dbname, cmdObj.firstElement().embeddedObjectUserCheck().getField("ns").String());
         uassert(ErrorCodes::InvalidNamespace,
                 str::stream() << "Invalid namespace: " << nss.ns(),
                 nss.isValid());
@@ -1362,7 +1368,7 @@ public:
     }
 
     virtual std::string parseNs(const std::string& dbname, const BSONObj& cmdObj) const {
-        std::string collectionName = cmdObj.getField("root").str();
+        std::string collectionName = cmdObj.getField("root").String();
         if (collectionName.empty())
             collectionName = "fs";
         collectionName += ".chunks";

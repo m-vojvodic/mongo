@@ -91,8 +91,8 @@ public:
                      int,
                      string& errmsg,
                      BSONObjBuilder& result) {
-        const NamespaceString source(cmdObj.getField(getName()).valueStringData());
-        const NamespaceString target(cmdObj.getField("to").valueStringData());
+        const NamespaceString source(cmdObj.getField(getName()).checkAndGetStringData());
+        const NamespaceString target(cmdObj.getField("to").checkAndGetStringData());
 
         uassert(ErrorCodes::InvalidNamespace,
                 str::stream() << "Invalid source namespace: " << source.ns(),
@@ -130,7 +130,7 @@ public:
             return false;
         }
 
-        if (source.coll() == "system.indexes" || target.coll() == "system.indexes") {
+        if (source.isSystemDotIndexes() || target.isSystemDotIndexes()) {
             errmsg = "renaming system.indexes is not allowed";
             return false;
         }

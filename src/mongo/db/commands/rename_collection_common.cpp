@@ -45,8 +45,8 @@ namespace rename_collection {
 Status checkAuthForRenameCollectionCommand(Client* client,
                                            const std::string& dbname,
                                            const BSONObj& cmdObj) {
-    const NamespaceString sourceNS(cmdObj.getField("renameCollection").valueStringData());
-    const NamespaceString targetNS(cmdObj.getField("to").valueStringData());
+    const NamespaceString sourceNS(cmdObj.getField("renameCollection").checkAndGetStringData());
+    const NamespaceString targetNS(cmdObj.getField("to").checkAndGetStringData());
     bool dropTarget = cmdObj["dropTarget"].trueValue();
 
     if (sourceNS.db() == targetNS.db() && !sourceNS.isSystem() && !targetNS.isSystem()) {

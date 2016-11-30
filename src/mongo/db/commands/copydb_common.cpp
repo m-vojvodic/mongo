@@ -45,8 +45,8 @@ namespace copydb {
 
 Status checkAuthForCopydbCommand(Client* client, const std::string& dbname, const BSONObj& cmdObj) {
     bool fromSelf = StringData(cmdObj.getStringField("fromhost")).empty();
-    const StringData fromdb = cmdObj.getField("fromdb").valueStringData();
-    const StringData todb = cmdObj.getField("todb").valueStringData();
+    const StringData fromdb = cmdObj.getField("fromdb").checkAndGetStringData();
+    const StringData todb = cmdObj.getField("todb").checkAndGetStringData();
 
     // get system collections
     std::vector<std::string> legalClientSystemCollections;

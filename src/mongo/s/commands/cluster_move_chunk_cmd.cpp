@@ -129,7 +129,7 @@ public:
             }
         }
 
-        const string toString = cmdObj["to"].str();
+        const std::string toString = cmdObj["to"].String();
         if (!toString.size()) {
             errmsg = "you have to specify where you want to move the chunk";
             return false;

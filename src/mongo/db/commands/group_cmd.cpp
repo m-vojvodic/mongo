@@ -109,7 +109,7 @@ private:
 
     virtual std::string parseNs(const std::string& dbname, const BSONObj& cmdObj) const {
         const NamespaceString nss(
-            dbname, cmdObj.firstElement().embeddedObjectUserCheck().getField("ns").str());
+            dbname, cmdObj.firstElement().embeddedObjectUserCheck().getField("ns").String());
         uassert(ErrorCodes::InvalidNamespace,
                 str::stream() << "Invalid namespace: " << nss.ns(),
                 nss.isValid());

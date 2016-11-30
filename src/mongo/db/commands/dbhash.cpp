@@ -102,12 +102,15 @@ public:
         }
 
         list<string> colls;
-        const NamespaceString nss(parseNs(dbname, cmdObj));
+        const std::string ns = parseNs(dbname, cmdObj);
+        uassert(ErrorCodes::InvalidNamespace,
+                str::stream() << "Invalid db name: " << ns,
+                NamespaceString::validDBName(ns, NamespaceString::DollarInDbNameBehavior::Allow));
 
         // We lock the entire database in S-mode in order to ensure that the contents will not
         // change for the snapshot.
         ScopedTransaction scopedXact(txn, MODE_IS);
-        AutoGetDb autoDb(txn, nss.ns(), MODE_S);
+        AutoGetDb autoDb(txn, ns, MODE_S);
         Database* db = autoDb.getDb();
         if (db) {
             db->getDatabaseCatalogEntry()->getCollectionNamespaces(&colls);

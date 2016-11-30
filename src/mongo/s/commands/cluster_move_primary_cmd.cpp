@@ -93,7 +93,7 @@ public:
     }
 
     virtual std::string parseNs(const std::string& dbname, const BSONObj& cmdObj) const {
-        return cmdObj.firstElement().str();
+        return cmdObj.firstElement().String();
     }
 
     virtual bool run(OperationContext* txn,
@@ -124,7 +124,7 @@ public:
 
         shared_ptr<DBConfig> config = status.getValue();
 
-        const string to = cmdObj["to"].str();
+        const std::string to = cmdObj["to"].String();
         if (!to.size()) {
             errmsg = "you have to specify where you want to move it";
             return false;

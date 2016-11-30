@@ -134,12 +134,12 @@ public:
         }
 
         CloneOptions cloneOptions;
-        cloneOptions.fromDB = cmdObj.getField("fromdb").str();
+        cloneOptions.fromDB = cmdObj.getField("fromdb").String();
         cloneOptions.slaveOk = cmdObj["slaveOk"].trueValue();
         cloneOptions.useReplAuth = false;
         cloneOptions.snapshot = true;
 
-        const string todb = cmdObj.getField("todb").str();
+        const std::string todb = cmdObj.getField("todb").String();
 
         uassert(ErrorCodes::InvalidNamespace,
                 str::stream() << "Invalid 'todb' name: " << todb,
