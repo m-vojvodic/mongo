@@ -606,15 +606,24 @@ public:
              int,
              string& errmsg,
              BSONObjBuilder& result) {
-        const NamespaceString fullnsFrom(cmdObj.firstElement().checkAndGetStringData());
+        const auto fullNsFromElt = cmdObj.firstElement();
+        uassert(ErrorCodes::InvalidNamespace,
+                "'renameCollection' option must be specified as a string",
+                fullNsFromElt.type() == BSONType::String);
+        const NamespaceString fullnsFrom(fullNsFromElt.valueStringData());
         uassert(ErrorCodes::InvalidNamespace,
                 str::stream() << "Invalid source namespace: " << fullnsFrom.ns(),
                 fullnsFrom.isValid());
         const string dbNameFrom = fullnsFrom.db().toString();
+
         auto confFrom =
             uassertStatusOK(Grid::get(txn)->catalogCache()->getDatabase(txn, dbNameFrom));
 
-        const NamespaceString fullnsTo(cmdObj["to"].checkAndGetStringData());
+        const auto fullnsToElt = cmdObj.getField("to");
+        uassert(ErrorCodes::InvalidNamespace,
+                "'to' option must be specified as a string",
+                fullnsToElt.type() == BSONType::String);
+        const NamespaceString fullnsTo(fullnsToElt.valueStringData());
         uassert(ErrorCodes::InvalidNamespace,
                 str::stream() << "Invalid target namespace: " << fullnsTo.ns(),
                 fullnsTo.isValid());
@@ -658,7 +667,11 @@ public:
              int,
              string& errmsg,
              BSONObjBuilder& result) {
-        const std::string todb = cmdObj.getField("todb").String();
+        const auto todbElt = cmdObj.getField("todb");
+        uassert(ErrorCodes::InvalidNamespace,
+                "'todb' option must be specified as a string",
+                todbElt.type() == BSONType::String);
+        const std::string todb = todbElt.str();
         uassert(ErrorCodes::InvalidNamespace,
                 "Invalid todb argument",
                 NamespaceString::validDBName(todb, NamespaceString::DollarInDbNameBehavior::Allow));
@@ -672,11 +685,15 @@ public:
         if (!fromhost.empty()) {
             return adminPassthrough(txn, scopedToDb.db(), cmdObj, result);
         } else {
-            const std::string fromdb = cmdObj.getField("fromdb").String();
-            uassert(
-                ErrorCodes::InvalidNamespace,
-                "invalid fromdb argument",
-                NamespaceString::validDBName(todb, NamespaceString::DollarInDbNameBehavior::Allow));
+            const auto fromDbElt = cmdObj.getField("fromdb");
+            uassert(ErrorCodes::InvalidNamespace,
+                    "'fromdb' option must be specified as a string",
+                    fromDbElt.type() == BSONType::String);
+            const std::string fromdb = fromDbElt.str();
+            uassert(ErrorCodes::InvalidNamespace,
+                    "invalid fromdb argument",
+                    NamespaceString::validDBName(fromdb,
+                                                 NamespaceString::DollarInDbNameBehavior::Allow));
 
             shared_ptr<DBConfig> confFrom =
                 uassertStatusOK(Grid::get(txn)->catalogCache()->getDatabase(txn, fromdb));
@@ -1009,8 +1026,11 @@ public:
     }
 
     virtual std::string parseNs(const std::string& dbname, const BSONObj& cmdObj) const {
-        const NamespaceString nss(
-            dbname, cmdObj.firstElement().embeddedObjectUserCheck().getField("ns").String());
+        const auto nsElt = cmdObj.firstElement().embeddedObjectUserCheck().getField("ns");
+        uassert(ErrorCodes::InvalidNamespace,
+                "'ns' option must be specified as a string",
+                nsElt.type() == BSONType::String);
+        const NamespaceString nss(dbname, nsElt.str());
         uassert(ErrorCodes::InvalidNamespace,
                 str::stream() << "Invalid namespace: " << nss.ns(),
                 nss.isValid());
@@ -1368,7 +1388,14 @@ public:
     }
 
     virtual std::string parseNs(const std::string& dbname, const BSONObj& cmdObj) const {
-        std::string collectionName = cmdObj.getField("root").String();
+        const auto rootElt = cmdObj.getField("root");
+        std::string collectionName;
+        if (rootElt.ok()) {
+            uassert(ErrorCodes::InvalidNamespace,
+                    "'root' option must be specified as a string",
+                    rootElt.type() == BSONType::String);
+            collectionName = rootElt.str();
+        }
         if (collectionName.empty())
             collectionName = "fs";
         collectionName += ".chunks";

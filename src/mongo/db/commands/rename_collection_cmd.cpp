@@ -91,8 +91,18 @@ public:
                      int,
                      string& errmsg,
                      BSONObjBuilder& result) {
-        const NamespaceString source(cmdObj.getField(getName()).checkAndGetStringData());
-        const NamespaceString target(cmdObj.getField("to").checkAndGetStringData());
+        const auto sourceNsElt = cmdObj.getField(getName());
+        const auto targetNsElt = cmdObj.getField("to");
+
+        uassert(ErrorCodes::TypeMismatch,
+                "'renameCollection' option must be specified as a string",
+                sourceNsElt.type() == BSONType::String);
+        uassert(ErrorCodes::TypeMismatch,
+                "'to' option must be specified as a string",
+                targetNsElt.type() == BSONType::String);
+
+        const NamespaceString source(sourceNsElt.valueStringData());
+        const NamespaceString target(targetNsElt.valueStringData());
 
         uassert(ErrorCodes::InvalidNamespace,
                 str::stream() << "Invalid source namespace: " << source.ns(),

@@ -93,7 +93,11 @@ public:
     }
 
     virtual std::string parseNs(const std::string& dbname, const BSONObj& cmdObj) const {
-        return cmdObj.firstElement().String();
+        const auto nsElt = cmdObj.firstElement();
+        uassert(ErrorCodes::InvalidNamespace,
+                "'movePrimary' option must be specified as a string",
+                nsElt.type() == BSONType::String);
+        return nsElt.str();
     }
 
     virtual bool run(OperationContext* txn,

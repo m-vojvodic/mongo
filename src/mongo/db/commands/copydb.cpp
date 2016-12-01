@@ -134,12 +134,20 @@ public:
         }
 
         CloneOptions cloneOptions;
-        cloneOptions.fromDB = cmdObj.getField("fromdb").String();
+        const auto fromdbElt = cmdObj.getField("fromdb");
+        uassert(ErrorCodes::TypeMismatch,
+                "'fromdb' option must be specified as a string",
+                fromdbElt.type() == BSONType::String);
+        cloneOptions.fromDB = fromdbElt.str();
         cloneOptions.slaveOk = cmdObj["slaveOk"].trueValue();
         cloneOptions.useReplAuth = false;
         cloneOptions.snapshot = true;
 
-        const std::string todb = cmdObj.getField("todb").String();
+        const auto todbElt = cmdObj.getField("todb");
+        uassert(ErrorCodes::TypeMismatch,
+                "'todb' option must be specified as a string",
+                todbElt.type() == BSONType::String);
+        const std::string todb = todbElt.str();
 
         uassert(ErrorCodes::InvalidNamespace,
                 str::stream() << "Invalid 'todb' name: " << todb,

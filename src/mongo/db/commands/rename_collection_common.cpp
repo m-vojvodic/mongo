@@ -45,8 +45,18 @@ namespace rename_collection {
 Status checkAuthForRenameCollectionCommand(Client* client,
                                            const std::string& dbname,
                                            const BSONObj& cmdObj) {
-    const NamespaceString sourceNS(cmdObj.getField("renameCollection").checkAndGetStringData());
-    const NamespaceString targetNS(cmdObj.getField("to").checkAndGetStringData());
+    const auto sourceNsElt = cmdObj.getField("renameCollection");
+    const auto targetNsElt = cmdObj.getField("to");
+
+    uassert(ErrorCodes::TypeMismatch,
+            "'renameCollection' option must be specified as a string",
+            sourceNsElt.type() == BSONType::String);
+    uassert(ErrorCodes::TypeMismatch,
+            "'to' option must be specified as a string",
+            targetNsElt.type() == BSONType::String);
+
+    const NamespaceString sourceNS(sourceNsElt.valueStringData());
+    const NamespaceString targetNS(targetNsElt.valueStringData());
     bool dropTarget = cmdObj["dropTarget"].trueValue();
 
     if (sourceNS.db() == targetNS.db() && !sourceNS.isSystem() && !targetNS.isSystem()) {

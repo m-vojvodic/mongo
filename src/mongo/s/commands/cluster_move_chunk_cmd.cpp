@@ -129,7 +129,11 @@ public:
             }
         }
 
-        const std::string toString = cmdObj["to"].String();
+        const auto toElt = cmdObj.getField("to");
+        uassert(ErrorCodes::TypeMismatch,
+                "'to' option must be specified as a string",
+                toElt.type() == BSONType::String);
+        const std::string toString = toElt.str();
         if (!toString.size()) {
             errmsg = "you have to specify where you want to move the chunk";
             return false;

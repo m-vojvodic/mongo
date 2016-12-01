@@ -108,8 +108,11 @@ private:
     }
 
     virtual std::string parseNs(const std::string& dbname, const BSONObj& cmdObj) const {
-        const NamespaceString nss(
-            dbname, cmdObj.firstElement().embeddedObjectUserCheck().getField("ns").String());
+        const auto nsElt = cmdObj.firstElement().embeddedObjectUserCheck().getField("ns");
+        uassert(ErrorCodes::InvalidNamespace,
+                "'ns' option must be specified as a string",
+                nsElt.type() == BSONType::String);
+        const NamespaceString nss(dbname, nsElt.str());
         uassert(ErrorCodes::InvalidNamespace,
                 str::stream() << "Invalid namespace: " << nss.ns(),
                 nss.isValid());
