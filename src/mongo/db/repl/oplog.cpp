@@ -638,8 +638,8 @@ std::map<std::string, ApplyOpMetadata> opsMap = {
     {"renameCollection",
      {[](OperationContext* txn, const char* ns, BSONObj& cmd) -> Status {
           return renameCollection(txn,
-                                  NamespaceString(cmd.firstElement().valuestrsafe()),
-                                  NamespaceString(cmd["to"].valuestrsafe()),
+                                  NamespaceString(cmd.firstElement().valueStringData()),
+                                  NamespaceString(cmd["to"].valueStringData()),
                                   cmd["dropTarget"].trueValue(),
                                   cmd["stayTemp"].trueValue());
       },
@@ -1001,7 +1001,7 @@ Status applyCommand_inlock(OperationContext* txn,
 
     BSONObj o = fieldO.embeddedObject();
 
-    const NamespaceString nss(fieldNs.valuestrsafe());
+    const NamespaceString nss(fieldNs.valueStringData());
     if (!nss.isValid()) {
         return {ErrorCodes::InvalidNamespace, "invalid ns: " + std::string(nss.ns())};
     }

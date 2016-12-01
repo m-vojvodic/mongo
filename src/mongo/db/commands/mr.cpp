@@ -1714,13 +1714,18 @@ public:
         ShardedConnectionInfo::addHook();
 
         // legacy name
-        string shardedOutputCollection = cmdObj["shardedOutputCollection"].valuestrsafe();
+        const auto shardedOutputCollectionElt = cmdObj.getField("shardedOutputCollection");
+        uassert(ErrorCodes::InvalidNamespace,
+                "'shardedOutputCollection' option must be specified as a string",
+                shardedOutputCollectionElt.type() == BSONType::String);
+        const std::string shardedOutputCollection = shardedOutputCollectionElt.str();
         verify(shardedOutputCollection.size() > 0);
-        string inputNS;
+
+        std::string inputNS;
         if (cmdObj["inputDB"].type() == String) {
-            inputNS = cmdObj["inputDB"].String() + "." + shardedOutputCollection;
+            inputNS = NamespaceString(cmdObj["inputDB"].str(), shardedOutputCollection).ns();
         } else {
-            inputNS = dbname + "." + shardedOutputCollection;
+            inputNS = NamespaceString(dbname, shardedOutputCollection).ns();
         }
 
         CurOp* curOp = CurOp::get(txn);

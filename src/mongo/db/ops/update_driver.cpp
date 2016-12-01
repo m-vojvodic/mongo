@@ -180,7 +180,7 @@ Status UpdateDriver::populateDocumentWithQueryFields(OperationContext* txn,
     // We canonicalize the query to collapse $and/$or, and the namespace is not needed.  Also,
     // because this is for the upsert case, where we insert a new document if one was not found, the
     // $where/$text clauses do not make sense, hence empty ExtensionsCallback.
-    auto qr = stdx::make_unique<QueryRequest>(NamespaceString(""));
+    auto qr = stdx::make_unique<QueryRequest>(NamespaceString());
     qr->setFilter(query);
     auto statusWithCQ = CanonicalQuery::canonicalize(txn, std::move(qr), ExtensionsCallbackNoop());
     if (!statusWithCQ.isOK()) {

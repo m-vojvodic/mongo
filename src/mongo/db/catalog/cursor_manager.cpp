@@ -313,7 +313,8 @@ bool CursorManager::eraseCursorGlobal(OperationContext* txn, CursorId id) {
 // --------------------------
 
 
-CursorManager::CursorManager(StringData ns) : _nss(ns) {
+CursorManager::CursorManager(StringData ns) {
+    _nss = ns.empty() ? NamespaceString() : NamespaceString(ns);
     _collectionCacheRuntimeId = globalCursorIdCache->created(_nss.ns());
     _random.reset(new PseudoRandom(globalCursorIdCache->nextSeed()));
 }
