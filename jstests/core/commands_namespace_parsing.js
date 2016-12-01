@@ -33,7 +33,6 @@
 
         let dbCmd = isAdminCommand ? db.adminCommand : db.runCommand;
         for (let cmd in cmds) {
-            print(tojson(cmds[cmd]));
             assert.commandFailedWithCode(dbCmd.apply(db, [cmds[cmd]]), ErrorCodes.InvalidNamespace);
         }
     }
