@@ -652,11 +652,11 @@ public:
     }
 
     virtual std::string parseNs(const std::string& dbname, const BSONObj& cmdObj) const {
-        const auto rootElt = cmdObj.getField("root");
+        const auto rootElt = cmdObj["root"];
         std::string collectionName;
         if (rootElt.ok()) {
             uassert(ErrorCodes::InvalidNamespace,
-                    "'root' option must be specified as a string",
+                    "'root' must be of type String",
                     rootElt.type() == BSONType::String);
             collectionName = rootElt.str();
         }

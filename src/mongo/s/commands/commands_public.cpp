@@ -608,7 +608,7 @@ public:
              BSONObjBuilder& result) {
         const auto fullNsFromElt = cmdObj.firstElement();
         uassert(ErrorCodes::InvalidNamespace,
-                "'renameCollection' option must be specified as a string",
+                "'renameCollection' must be of type String",
                 fullNsFromElt.type() == BSONType::String);
         const NamespaceString fullnsFrom(fullNsFromElt.valueStringData());
         uassert(ErrorCodes::InvalidNamespace,
@@ -619,9 +619,9 @@ public:
         auto confFrom =
             uassertStatusOK(Grid::get(txn)->catalogCache()->getDatabase(txn, dbNameFrom));
 
-        const auto fullnsToElt = cmdObj.getField("to");
+        const auto fullnsToElt = cmdObj["to"];
         uassert(ErrorCodes::InvalidNamespace,
-                "'to' option must be specified as a string",
+                "'to' must be of type String",
                 fullnsToElt.type() == BSONType::String);
         const NamespaceString fullnsTo(fullnsToElt.valueStringData());
         uassert(ErrorCodes::InvalidNamespace,
@@ -667,9 +667,9 @@ public:
              int,
              string& errmsg,
              BSONObjBuilder& result) {
-        const auto todbElt = cmdObj.getField("todb");
+        const auto todbElt = cmdObj["todb"];
         uassert(ErrorCodes::InvalidNamespace,
-                "'todb' option must be specified as a string",
+                "'todb' must be of type String",
                 todbElt.type() == BSONType::String);
         const std::string todb = todbElt.str();
         uassert(ErrorCodes::InvalidNamespace,
@@ -685,9 +685,9 @@ public:
         if (!fromhost.empty()) {
             return adminPassthrough(txn, scopedToDb.db(), cmdObj, result);
         } else {
-            const auto fromDbElt = cmdObj.getField("fromdb");
+            const auto fromDbElt = cmdObj["fromdb"];
             uassert(ErrorCodes::InvalidNamespace,
-                    "'fromdb' option must be specified as a string",
+                    "'fromdb' must be of type String",
                     fromDbElt.type() == BSONType::String);
             const std::string fromdb = fromDbElt.str();
             uassert(ErrorCodes::InvalidNamespace,
@@ -1026,9 +1026,9 @@ public:
     }
 
     virtual std::string parseNs(const std::string& dbname, const BSONObj& cmdObj) const {
-        const auto nsElt = cmdObj.firstElement().embeddedObjectUserCheck().getField("ns");
+        const auto nsElt = cmdObj.firstElement().embeddedObjectUserCheck()["ns"];
         uassert(ErrorCodes::InvalidNamespace,
-                "'ns' option must be specified as a string",
+                "'ns' must be of type String",
                 nsElt.type() == BSONType::String);
         const NamespaceString nss(dbname, nsElt.str());
         uassert(ErrorCodes::InvalidNamespace,
@@ -1388,11 +1388,11 @@ public:
     }
 
     virtual std::string parseNs(const std::string& dbname, const BSONObj& cmdObj) const {
-        const auto rootElt = cmdObj.getField("root");
+        const auto rootElt = cmdObj["root"];
         std::string collectionName;
         if (rootElt.ok()) {
             uassert(ErrorCodes::InvalidNamespace,
-                    "'root' option must be specified as a string",
+                    "'root' must be of type String",
                     rootElt.type() == BSONType::String);
             collectionName = rootElt.str();
         }

@@ -108,9 +108,9 @@ private:
     }
 
     virtual std::string parseNs(const std::string& dbname, const BSONObj& cmdObj) const {
-        const auto nsElt = cmdObj.firstElement().embeddedObjectUserCheck().getField("ns");
+        const auto nsElt = cmdObj.firstElement().embeddedObjectUserCheck()["ns"];
         uassert(ErrorCodes::InvalidNamespace,
-                "'ns' option must be specified as a string",
+                "'ns' must be of type String",
                 nsElt.type() == BSONType::String);
         const NamespaceString nss(dbname, nsElt.str());
         uassert(ErrorCodes::InvalidNamespace,

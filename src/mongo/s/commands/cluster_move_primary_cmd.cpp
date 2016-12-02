@@ -95,7 +95,7 @@ public:
     virtual std::string parseNs(const std::string& dbname, const BSONObj& cmdObj) const {
         const auto nsElt = cmdObj.firstElement();
         uassert(ErrorCodes::InvalidNamespace,
-                "'movePrimary' option must be specified as a string",
+                "'movePrimary' must be of type String",
                 nsElt.type() == BSONType::String);
         return nsElt.str();
     }
@@ -128,7 +128,11 @@ public:
 
         shared_ptr<DBConfig> config = status.getValue();
 
-        const std::string to = cmdObj["to"].String();
+        const auto toElt = cmdObj["to"];
+        uassert(ErrorCodes::TypeMismatch,
+                "'to' must be of type String",
+                toElt.type() == BSONType::String);
+        const std::string to = toElt.str();
         if (!to.size()) {
             errmsg = "you have to specify where you want to move it";
             return false;

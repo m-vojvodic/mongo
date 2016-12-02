@@ -13,27 +13,29 @@
     // If the command must be run against the admin database, set `isAdminCommand` to true.
     function assertFailsWithInvalidNamespacesForField(
         field, command, isFullyQualified, isAdminCommand) {
-        let invalidNamespaces = [];
+        const invalidNamespaces = [];
         invalidNamespaces.push(isFullyQualified ? "mydb." : "");
         invalidNamespaces.push(isFullyQualified ? "mydb.\0" : "\0");
         invalidNamespaces.push(isFullyQualified ? "mydb.a\0b" : "a\0b");
 
-        let cmds = [];
-        for (let ns in invalidNamespaces) {
-            let cmd = Object.assign({}, command);
-            // If a "." exists in the field, this must be an explain command.
-            let dotIdx = field.indexOf(".");
-            if (dotIdx >= 0) {
-                cmd[field.substring(0, dotIdx)][field.substring(dotIdx)] = invalidNamespaces[ns];
-            } else {
-                cmd[field] = invalidNamespaces[ns];
+        const cmds = [];
+        for (let ns of invalidNamespaces) {
+            const cmd = Object.extend({}, command, /* deep copy */ true);
+
+            const fieldNames = field.split(".");
+            const lastFieldNameIndex = fieldNames.length - 1;
+            let objToUpdate = cmd;
+            for (let i = 0; i < lastFieldNameIndex; i++) {
+                objToUpdate = objToUpdate[fieldNames[i]];
             }
+            objToUpdate[fieldNames[lastFieldNameIndex]] = ns;
+
             cmds.push(cmd);
         }
 
-        let dbCmd = isAdminCommand ? db.adminCommand : db.runCommand;
-        for (let cmd in cmds) {
-            assert.commandFailedWithCode(dbCmd.apply(db, [cmds[cmd]]), ErrorCodes.InvalidNamespace);
+        const dbCmd = isAdminCommand ? db.adminCommand : db.runCommand;
+        for (let cmd of cmds) {
+            assert.commandFailedWithCode(dbCmd.apply(db, [cmd]), ErrorCodes.InvalidNamespace);
         }
     }
 
@@ -59,7 +61,7 @@
         "distinct", {distinct: "", key: "a"}, isNotFullyQualified, isNotAdminCommand);
 
     // Test group fails with an invalid collection name.
-    assertFailsWithInvalidNamespacesForField("ns",
+    assertFailsWithInvalidNamespacesForField("group.ns",
                                              {group: {ns: "", $reduce: () => {}, initial: {}}},
                                              isNotFullyQualified,
                                              isNotAdminCommand);
@@ -183,9 +185,6 @@
     // Test planCacheClear fails with an invalid collection name.
     assertFailsWithInvalidNamespacesForField(
         "planCacheClear", {planCacheClear: ""}, isNotFullyQualified, isNotAdminCommand);
-
-    // TODO: user management commands?
-    // TODO: role management commands?
 
     if (!isMongos) {
         // Test cleanupOrphaned fails with an invalid collection name.
@@ -354,7 +353,7 @@
 
     // Test explain of group fails with an invalid collection name.
     assertFailsWithInvalidNamespacesForField(
-        "explain.group",
+        "explain.group.ns",
         {explain: {group: {ns: "", $reduce: () => {}, initial: {}}}},
         isNotFullyQualified,
         isNotAdminCommand);
@@ -378,7 +377,7 @@
 
     // Test explain of update fails with an invalid collection name.
     assertFailsWithInvalidNamespacesForField(
-        "explain.distinct",
+        "explain.update",
         {explain: {update: "", updates: [{q: {a: 1}, u: {a: 2}}]}},
         isNotFullyQualified,
         isNotAdminCommand);

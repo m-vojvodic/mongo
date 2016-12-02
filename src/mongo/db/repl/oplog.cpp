@@ -637,9 +637,17 @@ std::map<std::string, ApplyOpMetadata> opsMap = {
       {ErrorCodes::NamespaceNotFound, ErrorCodes::IndexNotFound}}},
     {"renameCollection",
      {[](OperationContext* txn, const char* ns, BSONObj& cmd) -> Status {
+          const auto sourceNsElt = cmd.firstElement();
+          const auto targetNsElt = cmd["to"];
+          uassert(ErrorCodes::TypeMismatch,
+                  "'renameCollection' must be of type String",
+                  sourceNsElt.type() == BSONType::String);
+          uassert(ErrorCodes::TypeMismatch,
+                  "'to' must be of type String",
+                  targetNsElt.type() == BSONType::String);
           return renameCollection(txn,
-                                  NamespaceString(cmd.firstElement().valueStringData()),
-                                  NamespaceString(cmd["to"].valueStringData()),
+                                  NamespaceString(sourceNsElt.valueStringData()),
+                                  NamespaceString(targetNsElt.valueStringData()),
                                   cmd["dropTarget"].trueValue(),
                                   cmd["stayTemp"].trueValue());
       },
@@ -684,6 +692,9 @@ Status applyOperation_inlock(OperationContext* txn,
     if (fieldO.isABSONObj())
         o = fieldO.embeddedObject();
 
+    uassert(ErrorCodes::InvalidNamespace,
+            "'ns' must be of type String",
+            fieldNs.type() == BSONType::String);
     const StringData ns = fieldNs.valueStringData();
 
     BSONObj o2;
@@ -1001,6 +1012,9 @@ Status applyCommand_inlock(OperationContext* txn,
 
     BSONObj o = fieldO.embeddedObject();
 
+    uassert(ErrorCodes::InvalidNamespace,
+            "'ns' must be of type String",
+            fieldNs.type() == BSONType::String);
     const NamespaceString nss(fieldNs.valueStringData());
     if (!nss.isValid()) {
         return {ErrorCodes::InvalidNamespace, "invalid ns: " + std::string(nss.ns())};

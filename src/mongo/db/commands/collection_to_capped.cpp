@@ -72,7 +72,12 @@ public:
         targetActions.addAction(ActionType::insert);
         targetActions.addAction(ActionType::createIndex);
         targetActions.addAction(ActionType::convertToCapped);
-        const NamespaceString nss(dbname, cmdObj.getField("toCollection").valueStringData());
+
+        const auto nssElt = cmdObj["toCollection"];
+        uassert(ErrorCodes::TypeMismatch,
+                "'toCollection' must be of type String",
+                nssElt.type() == BSONType::String);
+        const NamespaceString nss(dbname, nssElt.valueStringData());
         uassert(ErrorCodes::InvalidNamespace,
                 str::stream() << "Invalid target namespace: " << nss.ns(),
                 nss.isValid());
@@ -85,14 +90,26 @@ public:
              int,
              string& errmsg,
              BSONObjBuilder& result) {
-        const StringData from(jsobj.getField("cloneCollectionAsCapped").valueStringData());
-        const StringData to(jsobj.getField("toCollection").valueStringData());
+        const auto fromElt = jsobj["cloneCollectionAsCapped"];
+        const auto toElt = jsobj["toCollection"];
+
+        uassert(ErrorCodes::TypeMismatch,
+                "'cloneCollectionAsCapped' must be of type String",
+                fromElt.type() == BSONType::String);
+        uassert(ErrorCodes::TypeMismatch,
+                "'toCollection' must be of type String",
+                toElt.type() == BSONType::String);
+
+        const StringData from(fromElt.valueStringData());
+        const StringData to(toElt.valueStringData());
+
         uassert(ErrorCodes::InvalidNamespace,
                 str::stream() << "Invalid source collection name: " << from,
                 NamespaceString::validCollectionName(from));
         uassert(ErrorCodes::InvalidNamespace,
                 str::stream() << "Invalid target collection name: " << to,
                 NamespaceString::validCollectionName(to));
+
         double size = jsobj.getField("size").number();
         bool temp = jsobj.getField("temp").trueValue();
 
@@ -159,10 +176,7 @@ public:
              int,
              string& errmsg,
              BSONObjBuilder& result) {
-        const NamespaceString nss(dbname, jsobj.getField("convertToCapped").valueStringData());
-        uassert(ErrorCodes::InvalidNamespace,
-                str::stream() << "Invalid namespace: " << nss.ns(),
-                nss.isValid());
+        const NamespaceString nss(parseNsCollectionRequired(dbname, jsobj));
         double size = jsobj.getField("size").number();
 
         if (size == 0) {

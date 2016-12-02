@@ -129,9 +129,9 @@ public:
             }
         }
 
-        const auto toElt = cmdObj.getField("to");
+        const auto toElt = cmdObj["to"];
         uassert(ErrorCodes::TypeMismatch,
-                "'to' option must be specified as a string",
+                "'to' must be of type String",
                 toElt.type() == BSONType::String);
         const std::string toString = toElt.str();
         if (!toString.size()) {

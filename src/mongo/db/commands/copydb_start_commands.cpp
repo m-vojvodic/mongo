@@ -176,7 +176,11 @@ public:
                      int,
                      string& errmsg,
                      BSONObjBuilder& result) {
-        const string fromDb = cmdObj.getField("fromdb").str();
+        const auto fromdbElt = cmdObj["fromdbElt"];
+        uassert(ErrorCodes::TypeMismatch,
+                "'renameCollection' must be of type String",
+                fromdbElt.type() == BSONType::String);
+        const string fromDb = fromdbElt.str();
         uassert(
             ErrorCodes::InvalidNamespace,
             str::stream() << "Invalid 'fromdb' name: " << fromDb,

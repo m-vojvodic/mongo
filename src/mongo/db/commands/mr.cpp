@@ -280,7 +280,7 @@ void JSReducer::_reduce(const BSONList& tuples, BSONObj& key, int& endSizeEstima
 Config::Config(const string& _dbname, const BSONObj& cmdObj) {
     dbname = _dbname;
     uassert(ErrorCodes::TypeMismatch,
-            str::stream() << "'mapReduce' option must be specified as a string",
+            str::stream() << "'mapReduce' must be of type String",
             cmdObj.firstElement().type() == BSONType::String);
     const NamespaceString nss(dbname, cmdObj.firstElement().valueStringData());
     uassert(ErrorCodes::InvalidNamespace,
@@ -1714,9 +1714,9 @@ public:
         ShardedConnectionInfo::addHook();
 
         // legacy name
-        const auto shardedOutputCollectionElt = cmdObj.getField("shardedOutputCollection");
+        const auto shardedOutputCollectionElt = cmdObj["shardedOutputCollection"];
         uassert(ErrorCodes::InvalidNamespace,
-                "'shardedOutputCollection' option must be specified as a string",
+                "'shardedOutputCollection' must be of type String",
                 shardedOutputCollectionElt.type() == BSONType::String);
         const std::string shardedOutputCollection = shardedOutputCollectionElt.str();
         verify(shardedOutputCollection.size() > 0);

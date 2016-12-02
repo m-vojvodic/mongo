@@ -48,9 +48,9 @@ Status createCollection(OperationContext* txn,
 
     // Extract ns from first cmdObj element.
     BSONElement firstElt = it.next();
-    uassert(15888, "must pass name of collection to create", firstElt.valueStringData().empty());
+    uassert(15888, "must pass name of collection to create", !firstElt.valueStringData().empty());
 
-    Status status = userAllowedCreateNS(dbName, firstElt.valuestr());
+    Status status = userAllowedCreateNS(dbName, firstElt.valueStringData());
     if (!status.isOK()) {
         return status;
     }
