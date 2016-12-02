@@ -95,16 +95,17 @@ TEST_F(DocumentSourceGraphLookUpTest,
 
     NamespaceString fromNs("test", "graph_lookup");
     expCtx->resolvedNamespaces[fromNs.coll()] = {fromNs, std::vector<BSONObj>{}};
-    auto graphLookupStage = DocumentSourceGraphLookUp::create(expCtx,
-                                                              fromNs,
-                                                              "results",
-                                                              "from",
-                                                              "to",
-                                                              ExpressionFieldPath::create("_id"),
-                                                              boost::none,
-                                                              boost::none,
-                                                              boost::none,
-                                                              boost::none);
+    auto graphLookupStage =
+        DocumentSourceGraphLookUp::create(expCtx,
+                                          fromNs,
+                                          "results",
+                                          "from",
+                                          "to",
+                                          ExpressionFieldPath::create(expCtx, "_id"),
+                                          boost::none,
+                                          boost::none,
+                                          boost::none,
+                                          boost::none);
     graphLookupStage->setSource(inputMock.get());
     graphLookupStage->injectMongodInterface(
         std::make_shared<MockMongodImplementation>(std::move(fromContents)));
@@ -124,16 +125,17 @@ TEST_F(DocumentSourceGraphLookUpTest,
 
     NamespaceString fromNs("test", "graph_lookup");
     expCtx->resolvedNamespaces[fromNs.coll()] = {fromNs, std::vector<BSONObj>{}};
-    auto graphLookupStage = DocumentSourceGraphLookUp::create(expCtx,
-                                                              fromNs,
-                                                              "results",
-                                                              "from",
-                                                              "to",
-                                                              ExpressionFieldPath::create("_id"),
-                                                              boost::none,
-                                                              boost::none,
-                                                              boost::none,
-                                                              boost::none);
+    auto graphLookupStage =
+        DocumentSourceGraphLookUp::create(expCtx,
+                                          fromNs,
+                                          "results",
+                                          "from",
+                                          "to",
+                                          ExpressionFieldPath::create(expCtx, "_id"),
+                                          boost::none,
+                                          boost::none,
+                                          boost::none,
+                                          boost::none);
     graphLookupStage->setSource(inputMock.get());
     graphLookupStage->injectMongodInterface(
         std::make_shared<MockMongodImplementation>(std::move(fromContents)));
@@ -153,16 +155,17 @@ TEST_F(DocumentSourceGraphLookUpTest,
     NamespaceString fromNs("test", "graph_lookup");
     expCtx->resolvedNamespaces[fromNs.coll()] = {fromNs, std::vector<BSONObj>{}};
     auto unwindStage = DocumentSourceUnwind::create(expCtx, "results", false, boost::none);
-    auto graphLookupStage = DocumentSourceGraphLookUp::create(expCtx,
-                                                              fromNs,
-                                                              "results",
-                                                              "from",
-                                                              "to",
-                                                              ExpressionFieldPath::create("_id"),
-                                                              boost::none,
-                                                              boost::none,
-                                                              boost::none,
-                                                              unwindStage);
+    auto graphLookupStage =
+        DocumentSourceGraphLookUp::create(expCtx,
+                                          fromNs,
+                                          "results",
+                                          "from",
+                                          "to",
+                                          ExpressionFieldPath::create(expCtx, "_id"),
+                                          boost::none,
+                                          boost::none,
+                                          boost::none,
+                                          unwindStage);
     graphLookupStage->injectMongodInterface(
         std::make_shared<MockMongodImplementation>(std::move(fromContents)));
     graphLookupStage->setSource(inputMock.get());
@@ -195,16 +198,17 @@ TEST_F(DocumentSourceGraphLookUpTest,
 
     NamespaceString fromNs("test", "graph_lookup");
     expCtx->resolvedNamespaces[fromNs.coll()] = {fromNs, std::vector<BSONObj>{}};
-    auto graphLookupStage = DocumentSourceGraphLookUp::create(expCtx,
-                                                              fromNs,
-                                                              "results",
-                                                              "from",
-                                                              "to",
-                                                              ExpressionFieldPath::create("_id"),
-                                                              boost::none,
-                                                              boost::none,
-                                                              boost::none,
-                                                              boost::none);
+    auto graphLookupStage =
+        DocumentSourceGraphLookUp::create(expCtx,
+                                          fromNs,
+                                          "results",
+                                          "from",
+                                          "to",
+                                          ExpressionFieldPath::create(expCtx, "_id"),
+                                          boost::none,
+                                          boost::none,
+                                          boost::none,
+                                          boost::none);
     graphLookupStage->setSource(inputMock.get());
     graphLookupStage->injectMongodInterface(
         std::make_shared<MockMongodImplementation>(std::move(fromContents)));
@@ -265,7 +269,7 @@ TEST_F(DocumentSourceGraphLookUpTest, ShouldPropagatePauses) {
                                           "results",
                                           "from",
                                           "to",
-                                          ExpressionFieldPath::create("startPoint"),
+                                          ExpressionFieldPath::create(expCtx, "startPoint"),
                                           boost::none,
                                           boost::none,
                                           boost::none,
@@ -339,7 +343,7 @@ TEST_F(DocumentSourceGraphLookUpTest, ShouldPropagatePausesWhileUnwinding) {
                                           "results",
                                           "from",
                                           "to",
-                                          ExpressionFieldPath::create("startPoint"),
+                                          ExpressionFieldPath::create(expCtx, "startPoint"),
                                           boost::none,
                                           boost::none,
                                           boost::none,
@@ -398,7 +402,7 @@ TEST_F(DocumentSourceGraphLookUpTest, GraphLookupShouldReportAsFieldIsModified) 
                                           "results",
                                           "from",
                                           "to",
-                                          ExpressionFieldPath::create("startPoint"),
+                                          ExpressionFieldPath::create(expCtx, "startPoint"),
                                           boost::none,
                                           boost::none,
                                           boost::none,
@@ -422,7 +426,7 @@ TEST_F(DocumentSourceGraphLookUpTest, GraphLookupShouldReportFieldsModifiedByAbs
                                           "results",
                                           "from",
                                           "to",
-                                          ExpressionFieldPath::create("startPoint"),
+                                          ExpressionFieldPath::create(expCtx, "startPoint"),
                                           boost::none,
                                           boost::none,
                                           boost::none,

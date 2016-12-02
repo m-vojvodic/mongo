@@ -244,7 +244,7 @@ TEST_F(ExpressionNaryTest, AddedConstantOperandIsSerialized) {
 }
 
 TEST_F(ExpressionNaryTest, AddedFieldPathOperandIsSerialized) {
-    _notAssociativeNorCommutative->addOperand(ExpressionFieldPath::create("ab.c"));
+    _notAssociativeNorCommutative->addOperand(ExpressionFieldPath::create(nullptr, "ab.c"));
     assertContents(_notAssociativeNorCommutative, BSON_ARRAY("$ab.c"));
 }
 
@@ -258,7 +258,7 @@ TEST_F(ExpressionNaryTest, ValidateConstantExpressionDependency) {
 }
 
 TEST_F(ExpressionNaryTest, ValidateFieldPathExpressionDependency) {
-    _notAssociativeNorCommutative->addOperand(ExpressionFieldPath::create("ab.c"));
+    _notAssociativeNorCommutative->addOperand(ExpressionFieldPath::create(nullptr, "ab.c"));
     assertDependencies(_notAssociativeNorCommutative, BSON_ARRAY("ab.c"));
 }
 
@@ -1522,7 +1522,7 @@ public:
 class Dependencies {
 public:
     void run() {
-        intrusive_ptr<Expression> nested = ExpressionFieldPath::create("a.b");
+        intrusive_ptr<Expression> nested = ExpressionFieldPath::create(nullptr, "a.b");
         intrusive_ptr<Expression> expression = ExpressionCoerceToBool::create(nullptr, nested);
         DepsTracker dependencies;
         expression->addDependencies(&dependencies);
@@ -1538,7 +1538,7 @@ class AddToBsonObj {
 public:
     void run() {
         intrusive_ptr<Expression> expression =
-            ExpressionCoerceToBool::create(nullptr, ExpressionFieldPath::create("foo"));
+            ExpressionCoerceToBool::create(nullptr, ExpressionFieldPath::create(nullptr, "foo"));
 
         // serialized as $and because CoerceToBool isn't an ExpressionNary
         assertBinaryEqual(fromjson("{field:{$and:['$foo']}}"), toBsonObj(expression));
@@ -1555,7 +1555,7 @@ class AddToBsonArray {
 public:
     void run() {
         intrusive_ptr<Expression> expression =
-            ExpressionCoerceToBool::create(nullptr, ExpressionFieldPath::create("foo"));
+            ExpressionCoerceToBool::create(nullptr, ExpressionFieldPath::create(nullptr, "foo"));
 
         // serialized as $and because CoerceToBool isn't an ExpressionNary
         assertBinaryEqual(BSON_ARRAY(fromjson("{$and:['$foo']}")), toBsonArray(expression));
@@ -2145,7 +2145,7 @@ namespace FieldPath {
 class Invalid {
 public:
     void run() {
-        ASSERT_THROWS(ExpressionFieldPath::create(""), UserException);
+        ASSERT_THROWS(ExpressionFieldPath::create(nullptr, ""), UserException);
     }
 };
 
@@ -2153,7 +2153,7 @@ public:
 class Optimize {
 public:
     void run() {
-        intrusive_ptr<Expression> expression = ExpressionFieldPath::create("a");
+        intrusive_ptr<Expression> expression = ExpressionFieldPath::create(nullptr, "a");
         // An attempt to optimize returns the Expression itself.
         ASSERT_EQUALS(expression, expression->optimize());
     }
@@ -2163,7 +2163,7 @@ public:
 class Dependencies {
 public:
     void run() {
-        intrusive_ptr<Expression> expression = ExpressionFieldPath::create("a.b");
+        intrusive_ptr<Expression> expression = ExpressionFieldPath::create(nullptr, "a.b");
         DepsTracker dependencies;
         expression->addDependencies(&dependencies);
         ASSERT_EQUALS(1U, dependencies.fields.size());
@@ -2177,7 +2177,7 @@ public:
 class Missing {
 public:
     void run() {
-        intrusive_ptr<Expression> expression = ExpressionFieldPath::create("a");
+        intrusive_ptr<Expression> expression = ExpressionFieldPath::create(nullptr, "a");
         assertBinaryEqual(fromjson("{}"), toBson(expression->evaluate(Document())));
     }
 };
@@ -2186,7 +2186,7 @@ public:
 class Present {
 public:
     void run() {
-        intrusive_ptr<Expression> expression = ExpressionFieldPath::create("a");
+        intrusive_ptr<Expression> expression = ExpressionFieldPath::create(nullptr, "a");
         assertBinaryEqual(fromjson("{'':123}"),
                           toBson(expression->evaluate(fromBson(BSON("a" << 123)))));
     }
@@ -2196,7 +2196,7 @@ public:
 class NestedBelowNull {
 public:
     void run() {
-        intrusive_ptr<Expression> expression = ExpressionFieldPath::create("a.b");
+        intrusive_ptr<Expression> expression = ExpressionFieldPath::create(nullptr, "a.b");
         assertBinaryEqual(fromjson("{}"),
                           toBson(expression->evaluate(fromBson(fromjson("{a:null}")))));
     }
@@ -2206,7 +2206,7 @@ public:
 class NestedBelowUndefined {
 public:
     void run() {
-        intrusive_ptr<Expression> expression = ExpressionFieldPath::create("a.b");
+        intrusive_ptr<Expression> expression = ExpressionFieldPath::create(nullptr, "a.b");
         assertBinaryEqual(fromjson("{}"),
                           toBson(expression->evaluate(fromBson(fromjson("{a:undefined}")))));
     }
@@ -2216,7 +2216,7 @@ public:
 class NestedBelowMissing {
 public:
     void run() {
-        intrusive_ptr<Expression> expression = ExpressionFieldPath::create("a.b");
+        intrusive_ptr<Expression> expression = ExpressionFieldPath::create(nullptr, "a.b");
         assertBinaryEqual(fromjson("{}"),
                           toBson(expression->evaluate(fromBson(fromjson("{z:1}")))));
     }
@@ -2226,7 +2226,7 @@ public:
 class NestedBelowInt {
 public:
     void run() {
-        intrusive_ptr<Expression> expression = ExpressionFieldPath::create("a.b");
+        intrusive_ptr<Expression> expression = ExpressionFieldPath::create(nullptr, "a.b");
         assertBinaryEqual(fromjson("{}"), toBson(expression->evaluate(fromBson(BSON("a" << 2)))));
     }
 };
@@ -2235,7 +2235,7 @@ public:
 class NestedValue {
 public:
     void run() {
-        intrusive_ptr<Expression> expression = ExpressionFieldPath::create("a.b");
+        intrusive_ptr<Expression> expression = ExpressionFieldPath::create(nullptr, "a.b");
         assertBinaryEqual(BSON("" << 55),
                           toBson(expression->evaluate(fromBson(BSON("a" << BSON("b" << 55))))));
     }
@@ -2245,7 +2245,7 @@ public:
 class NestedBelowEmptyObject {
 public:
     void run() {
-        intrusive_ptr<Expression> expression = ExpressionFieldPath::create("a.b");
+        intrusive_ptr<Expression> expression = ExpressionFieldPath::create(nullptr, "a.b");
         assertBinaryEqual(fromjson("{}"),
                           toBson(expression->evaluate(fromBson(BSON("a" << BSONObj())))));
     }
@@ -2255,7 +2255,7 @@ public:
 class NestedBelowEmptyArray {
 public:
     void run() {
-        intrusive_ptr<Expression> expression = ExpressionFieldPath::create("a.b");
+        intrusive_ptr<Expression> expression = ExpressionFieldPath::create(nullptr, "a.b");
         assertBinaryEqual(BSON("" << BSONArray()),
                           toBson(expression->evaluate(fromBson(BSON("a" << BSONArray())))));
     }
@@ -2265,7 +2265,7 @@ public:
 class NestedBelowArrayWithNull {
 public:
     void run() {
-        intrusive_ptr<Expression> expression = ExpressionFieldPath::create("a.b");
+        intrusive_ptr<Expression> expression = ExpressionFieldPath::create(nullptr, "a.b");
         assertBinaryEqual(fromjson("{'':[]}"),
                           toBson(expression->evaluate(fromBson(fromjson("{a:[null]}")))));
     }
@@ -2275,7 +2275,7 @@ public:
 class NestedBelowArrayWithUndefined {
 public:
     void run() {
-        intrusive_ptr<Expression> expression = ExpressionFieldPath::create("a.b");
+        intrusive_ptr<Expression> expression = ExpressionFieldPath::create(nullptr, "a.b");
         assertBinaryEqual(fromjson("{'':[]}"),
                           toBson(expression->evaluate(fromBson(fromjson("{a:[undefined]}")))));
     }
@@ -2285,7 +2285,7 @@ public:
 class NestedBelowArrayWithInt {
 public:
     void run() {
-        intrusive_ptr<Expression> expression = ExpressionFieldPath::create("a.b");
+        intrusive_ptr<Expression> expression = ExpressionFieldPath::create(nullptr, "a.b");
         assertBinaryEqual(fromjson("{'':[]}"),
                           toBson(expression->evaluate(fromBson(fromjson("{a:[1]}")))));
     }
@@ -2295,7 +2295,7 @@ public:
 class NestedWithinArray {
 public:
     void run() {
-        intrusive_ptr<Expression> expression = ExpressionFieldPath::create("a.b");
+        intrusive_ptr<Expression> expression = ExpressionFieldPath::create(nullptr, "a.b");
         assertBinaryEqual(fromjson("{'':[9]}"),
                           toBson(expression->evaluate(fromBson(fromjson("{a:[{b:9}]}")))));
     }
@@ -2305,7 +2305,7 @@ public:
 class MultipleArrayValues {
 public:
     void run() {
-        intrusive_ptr<Expression> expression = ExpressionFieldPath::create("a.b");
+        intrusive_ptr<Expression> expression = ExpressionFieldPath::create(nullptr, "a.b");
         assertBinaryEqual(fromjson("{'':[9,20]}"),
                           toBson(expression->evaluate(
                               fromBson(fromjson("{a:[{b:9},null,undefined,{g:4},{b:20},{}]}")))));
@@ -2316,7 +2316,7 @@ public:
 class ExpandNestedArrays {
 public:
     void run() {
-        intrusive_ptr<Expression> expression = ExpressionFieldPath::create("a.b.c");
+        intrusive_ptr<Expression> expression = ExpressionFieldPath::create(nullptr, "a.b.c");
         assertBinaryEqual(fromjson("{'':[[1,2],3,[4],[[5]],[6,7]]}"),
                           toBson(expression->evaluate(fromBson(fromjson("{a:[{b:[{c:1},{c:2}]},"
                                                                         "{b:{c:3}},"
@@ -2330,7 +2330,7 @@ public:
 class AddToBsonObj {
 public:
     void run() {
-        intrusive_ptr<Expression> expression = ExpressionFieldPath::create("a.b.c");
+        intrusive_ptr<Expression> expression = ExpressionFieldPath::create(nullptr, "a.b.c");
         assertBinaryEqual(BSON("foo"
                                << "$a.b.c"),
                           BSON("foo" << expression->serialize(false)));
@@ -2341,7 +2341,7 @@ public:
 class AddToBsonArray {
 public:
     void run() {
-        intrusive_ptr<Expression> expression = ExpressionFieldPath::create("a.b.c");
+        intrusive_ptr<Expression> expression = ExpressionFieldPath::create(nullptr, "a.b.c");
         BSONArrayBuilder bab;
         bab << expression->serialize(false);
         assertBinaryEqual(BSON_ARRAY("$a.b.c"), bab.arr());
@@ -2519,18 +2519,18 @@ TEST(ExpressionObjectEvaluate, ShouldEvaluateEachField) {
 TEST(ExpressionObjectEvaluate, OrderOfFieldsInOutputShouldMatchOrderInSpecification) {
     intrusive_ptr<ExpressionContext> expCtx(new ExpressionContext());
     auto object = ExpressionObject::create(expCtx,
-                                           {{"a", ExpressionFieldPath::create("a")},
-                                            {"b", ExpressionFieldPath::create("b")},
-                                            {"c", ExpressionFieldPath::create("c")}});
+                                           {{"a", ExpressionFieldPath::create(expCtx, "a")},
+                                            {"b", ExpressionFieldPath::create(expCtx, "b")},
+                                            {"c", ExpressionFieldPath::create(expCtx, "c")}});
     ASSERT_VALUE_EQ(Value(Document{{"a", "A"}, {"b", "B"}, {"c", "C"}}),
                     object->evaluate(Document{{"c", "C"}, {"a", "A"}, {"b", "B"}, {"_id", "ID"}}));
 }
 
 TEST(ExpressionObjectEvaluate, ShouldRemoveFieldsThatHaveMissingValues) {
     intrusive_ptr<ExpressionContext> expCtx(new ExpressionContext());
-    auto object = ExpressionObject::create(
-        expCtx,
-        {{"a", ExpressionFieldPath::create("a.b")}, {"b", ExpressionFieldPath::create("missing")}});
+    auto object = ExpressionObject::create(expCtx,
+                                           {{"a", ExpressionFieldPath::create(expCtx, "a.b")},
+                                            {"b", ExpressionFieldPath::create(expCtx, "missing")}});
     ASSERT_VALUE_EQ(Value(Document{}), object->evaluate(Document()));
     ASSERT_VALUE_EQ(Value(Document{}), object->evaluate(Document{{"a", 1}}));
 }
@@ -2541,7 +2541,8 @@ TEST(ExpressionObjectEvaluate, ShouldEvaluateFieldsWithinNestedObject) {
         expCtx,
         {{"a",
           ExpressionObject::create(
-              expCtx, {{"b", makeConstant(1)}, {"c", ExpressionFieldPath::create("_id")}})}});
+              expCtx,
+              {{"b", makeConstant(1)}, {"c", ExpressionFieldPath::create(expCtx, "_id")}})}});
     ASSERT_VALUE_EQ(Value(Document{{"a", Document{{"b", 1}}}}), object->evaluate(Document()));
     ASSERT_VALUE_EQ(Value(Document{{"a", Document{{"b", 1}, {"c", "ID"}}}}),
                     object->evaluate(Document{{"_id", "ID"}}));
@@ -2549,7 +2550,8 @@ TEST(ExpressionObjectEvaluate, ShouldEvaluateFieldsWithinNestedObject) {
 
 TEST(ExpressionObjectEvaluate, ShouldEvaluateToEmptyDocumentIfAllFieldsAreMissing) {
     intrusive_ptr<ExpressionContext> expCtx(new ExpressionContext());
-    auto object = ExpressionObject::create(expCtx, {{"a", ExpressionFieldPath::create("missing")}});
+    auto object =
+        ExpressionObject::create(expCtx, {{"a", ExpressionFieldPath::create(expCtx, "missing")}});
     ASSERT_VALUE_EQ(Value(Document{}), object->evaluate(Document()));
 
     auto objectWithNestedObject = ExpressionObject::create(expCtx, {{"nested", object}});
@@ -2571,7 +2573,8 @@ TEST(ExpressionObjectDependencies, ConstantValuesShouldNotBeAddedToDependencies)
 
 TEST(ExpressionObjectDependencies, FieldPathsShouldBeAddedToDependencies) {
     intrusive_ptr<ExpressionContext> expCtx(new ExpressionContext());
-    auto object = ExpressionObject::create(expCtx, {{"x", ExpressionFieldPath::create("c.d")}});
+    auto object =
+        ExpressionObject::create(expCtx, {{"x", ExpressionFieldPath::create(expCtx, "c.d")}});
     DepsTracker deps;
     object->addDependencies(&deps);
     ASSERT_EQ(deps.fields.size(), 1UL);

@@ -110,8 +110,8 @@ TEST_F(DocumentSourceGroupTest, ShouldBeAbleToPauseLoadingWhileSpilled) {
     VariablesParseState vps(&idGen);
     AccumulationStatement pushStatement{"spaceHog",
                                         AccumulationStatement::getFactory("$push"),
-                                        ExpressionFieldPath::parse("$largeStr", vps)};
-    auto groupByExpression = ExpressionFieldPath::parse("$_id", vps);
+                                        ExpressionFieldPath::parse(expCtx, "$largeStr", vps)};
+    auto groupByExpression = ExpressionFieldPath::parse(expCtx, "$_id", vps);
     auto group = DocumentSourceGroup::create(
         expCtx, groupByExpression, {pushStatement}, idGen.getIdCount(), maxMemoryUsageBytes);
 
@@ -150,8 +150,8 @@ TEST_F(DocumentSourceGroupTest, ShouldErrorIfNotAllowedToSpillToDiskAndResultSet
     VariablesParseState vps(&idGen);
     AccumulationStatement pushStatement{"spaceHog",
                                         AccumulationStatement::getFactory("$push"),
-                                        ExpressionFieldPath::parse("$largeStr", vps)};
-    auto groupByExpression = ExpressionFieldPath::parse("$_id", vps);
+                                        ExpressionFieldPath::parse(expCtx, "$largeStr", vps)};
+    auto groupByExpression = ExpressionFieldPath::parse(expCtx, "$_id", vps);
     auto group = DocumentSourceGroup::create(
         expCtx, groupByExpression, {pushStatement}, idGen.getIdCount(), maxMemoryUsageBytes);
 
@@ -173,8 +173,8 @@ TEST_F(DocumentSourceGroupTest, ShouldCorrectlyTrackMemoryUsageBetweenPauses) {
     VariablesParseState vps(&idGen);
     AccumulationStatement pushStatement{"spaceHog",
                                         AccumulationStatement::getFactory("$push"),
-                                        ExpressionFieldPath::parse("$largeStr", vps)};
-    auto groupByExpression = ExpressionFieldPath::parse("$_id", vps);
+                                        ExpressionFieldPath::parse(expCtx, "$largeStr", vps)};
+    auto groupByExpression = ExpressionFieldPath::parse(expCtx, "$_id", vps);
     auto group = DocumentSourceGroup::create(
         expCtx, groupByExpression, {pushStatement}, idGen.getIdCount(), maxMemoryUsageBytes);
 
